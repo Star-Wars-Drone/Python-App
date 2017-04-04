@@ -149,10 +149,13 @@ class Drone:
     def read_waypoints(self,filename):
         """Gets waypoints from a file"""
         with open(filename,"r") as filestream:
+            num_waypoints = 0
             for line in filestream:
                 currentline = line.rstrip("\n").split(",")
                 #self.waypoints.extend(LocationGlobal(float(currentline[0]),float(currentline[1]),float(currentline[2])))
                 self.waypoints.append(LocationGlobalRelative(float(currentline[0]),float(currentline[1]),float(currentline[2])))
+                num_waypoints = num_waypoints + 1
+            return num_waypoints
 
     def get_distance_metres(self,aLocation1, aLocation2):
         """
@@ -166,38 +169,37 @@ class Drone:
         dlong = aLocation2.lon - aLocation1.lon
         return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
+    def fly_to_waypoint(self,waypoint):
+        distance_from_target = 100
+        self.vehicle.simple_goto(waypoint)
+        while distance_from_target > 0.5:
+            current_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
+            distance_from_target = self.get_distance_metres(current_location,waypoint)
+            print distance_from_target
+            time.sleep(1)
+        return
+
+
     def run(self):
         #self.take_off_and_land()
         filename = "waypoints.txt"
-        distance_from_target = 100
-        self.read_waypoints(filename)
+        num_waypoints = self.read_waypoints(filename)
         current_waypoint = 0
         self.take_off(20)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-        self.vehicle.simple_goto(self.waypoints[current_waypoint])
-        while distance_from_target > 0.5:
-            current_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-            distance_from_target = self.get_distance_metres(current_location,self.waypoints[current_waypoint])
-            print distance_from_target
+        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt - 96)
+        print "Home set as: {}".format(home_location)
+        time.sleep(1)
+        while current_waypoint < num_waypoints:
+            self.fly_to_waypoint(self.waypoints[current_waypoint])
+            self.rotate_on_pos()
+            current_waypoint = current_waypoint + 1
             time.sleep(1)
-        current_waypoint = current_waypoint + 1
-        distance_from_target = 100
-        self.rotate_on_pos()
-        self.vehicle.simple_goto(self.waypoints[current_waypoint])
-        while distance_from_target > 0.5:
-            current_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-            distance_from_target = self.get_distance_metres(current_location,self.waypoints[current_waypoint])
-            print distance_from_target
-            time.sleep(1)
-        distance_from_target = 100    
-        self.rotate_on_pos()
-        self.vehicle.simple_goto(home_location)
-        while distance_from_target > 0.5:
-            current_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-            distance_from_target = self.get_distance_metres(current_location,home_location)
-            print distance_from_target
-            time.sleep(1)
+        print "Flying to home location: {}".format(home_location)
+        self.fly_to_waypoint(home_location)
         self.land()
+
+
+    
 
 
 if __name__ == '__main__':
