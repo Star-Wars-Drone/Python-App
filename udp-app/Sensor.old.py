@@ -1,13 +1,16 @@
-from multiprocessing import Process
+from threading import Thread
+from logging import debug
 from LidarLiteV3 import LidarLiteV3
 import time
-class Sensor(Process):
+class Sensor(Thread):
     """ Sensor Class for external sensors i2c"""
     def __init__(self,bus):
-        Process.__init__(self)
+        super(Sensor,self).__init__()
         self.bus = bus
         self.range_sensor = LidarLiteV3(bus)
         self.range_sensor.begin(4,0x62)
+
+        pass
 
     def run(self):
         while True:

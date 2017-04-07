@@ -21,18 +21,16 @@ class Drone:
         #self.vehicle.mode = VehicleMode("GUIDED")
         #self.vehicle.groundspeed = 5;
         #self.waypoints = []
-        try:
-            print "Creating Drone Object"
-            connection_string = "udp:127.0.0.1:5760"
-            self.vehicle = connect(connection_string, wait_ready=True)
-            self.add_callback()
-            self.mode = "GUIDED"
-            self.vehicle.mode = VehicleMode("GUIDED")
-            self.vehicle.groundspeed = 5;
-            self.waypoints = []
-            self.run()
-        except KeyboardInterrupt:
-            self.clean_exit()
+        print "Creating Drone Object"
+        connection_string = "udp:127.0.0.1:5760"
+        self.vehicle = connect(connection_string, wait_ready=True)
+        self.add_callback()
+        self.mode = "GUIDED"
+        self.vehicle.mode = VehicleMode("GUIDED")
+        self.vehicle.groundspeed = 5;
+        self.waypoints = []
+        #self.run()
+        #self.clean_exit()
 
     def __del__(self):
         """Clean up"""
@@ -197,7 +195,6 @@ class Drone:
     def clean_exit(self):
          self.vehicle.mode = VehicleMode("LAND")
          print "Program interrupted, switching to LAND mode."
-         os._exit(0)
 
 
     def run(self):

@@ -211,7 +211,6 @@ class Drone:
         time.sleep(1)
         while current_waypoint < num_waypoints:
             self.fly_to_waypoint(self.waypoints[current_waypoint])
-            self.rotate_on_pos()
             current_waypoint = current_waypoint + 1
             time.sleep(1)
         print "Flying to home location: {}".format(home_location)
