@@ -1,3 +1,4 @@
+from multiprocessing import Process
 from dronekit import connect, VehicleMode, LocationGlobal, LocationGlobalRelative
 from pymavlink import mavutil
 import time
@@ -7,32 +8,18 @@ import tty
 import termios
 import os
 
-class Drone:
-    """ Drone Class"""
-
-
-    def __init__(self):
-        """Basic global varbles"""
-        #print "Creating Drone Object"
-        #connection_string = "udp:127.0.0.1:5760"
-        #self.vehicle = connect(connection_string, wait_ready=True)
-        #self.add_callback()
-        #self.mode = "GUIDED"
-        #self.vehicle.mode = VehicleMode("GUIDED")
-        #self.vehicle.groundspeed = 5;
-        #self.waypoints = []
-        try:
-            print "Creating Drone Object"
-            connection_string = "udp:127.0.0.1:5760"
-            self.vehicle = connect(connection_string, wait_ready=True)
-            self.add_callback()
-            self.mode = "GUIDED"
-            self.vehicle.mode = VehicleMode("GUIDED")
-            self.vehicle.groundspeed = 5;
-            self.waypoints = []
-            self.run()
-        except KeyboardInterrupt:
-            self.clean_exit()
+class DroneRun(Process):
+    """ Sensor Class for external sensors i2c"""
+    def __init__(self,bus):
+        Process.__init__(self)
+        print "Creating Drone Object"
+        connection_string = "udp:127.0.0.1:5760"
+        self.vehicle = connect(connection_string, wait_ready=True)
+        self.add_callback()
+        self.mode = "GUIDED"
+        self.vehicle.mode = VehicleMode("GUIDED")
+        self.vehicle.groundspeed = 5;
+        self.waypoints = []
 
     def __del__(self):
         """Clean up"""
@@ -197,7 +184,6 @@ class Drone:
     def clean_exit(self):
          self.vehicle.mode = VehicleMode("LAND")
          print "Program interrupted, switching to LAND mode."
-         os._exit(0)
 
 
     def run(self):
@@ -217,17 +203,3 @@ class Drone:
         print "Flying to home location: {}".format(home_location)
         self.fly_to_waypoint(home_location)
         self.land()
-
-
-    
-
-
-if __name__ == '__main__':
-    print "running from command line"
-    Drone()
-
-
-
-
-
-

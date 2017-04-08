@@ -201,22 +201,7 @@ class Drone:
 
 
     def run(self):
-        #self.take_off_and_land()
-        filename = "waypoints.txt"
-        num_waypoints = self.read_waypoints(filename)
-        current_waypoint = 0
-        self.take_off(20)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt - 96)
-        print "Home set as: {}".format(home_location)
-        time.sleep(1)
-        while current_waypoint < num_waypoints:
-            self.fly_to_waypoint(self.waypoints[current_waypoint])
-            self.rotate_on_pos()
-            current_waypoint = current_waypoint + 1
-            time.sleep(1)
-        print "Flying to home location: {}".format(home_location)
-        self.fly_to_waypoint(home_location)
-        self.land()
+        self.take_off_and_land()
 
 
     
