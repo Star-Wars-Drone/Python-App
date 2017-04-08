@@ -5,5 +5,7 @@ bus = SMBus(1)
 range_sensor = LidarLiteV3(bus)
 range_sensor.begin(0,0x62)
 while True:
-    range_sensor.get_distance(False,0x62)
+    dest = range_sensor.get_distance(False,0x62)
+    print dest 
     time.sleep(.05)
+

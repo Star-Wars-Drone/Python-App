@@ -59,7 +59,8 @@ class LidarLiteV3():
             temp_low = temp_low << 8
             temp_high = (temp_high >> 8) & 0xff;
             distance = temp_high | temp_low
-            print distance
+            return distance
+
 
 
 

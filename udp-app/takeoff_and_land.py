@@ -28,7 +28,7 @@ class Drone:
             self.add_callback()
             self.mode = "GUIDED"
             self.vehicle.mode = VehicleMode("GUIDED")
-            self.vehicle.groundspeed = 5;
+            self.vehicle.groundspeed = 2;
             self.waypoints = []
             self.run()
         except KeyboardInterrupt:
@@ -56,11 +56,12 @@ class Drone:
         #a_location = LocationGlobal(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,altitude)
         a_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,altitude)
         self.vehicle.simple_goto(a_location)
+        time.sleep(1)
         #loc = self.vehicle.location
         #loc.alt = altitude
         #self.vehicle.simple_goto(loc)
         self.vehicle.flush()
-        while self.vehicle.location.global_relative_frame.alt <= altitude * .95:
+        while self.vehicle.location.global_relative_frame.alt <= altitude * .85:
             time.sleep(1)
             print self.vehicle.location.global_relative_frame.alt
         time.sleep(1)
@@ -80,7 +81,7 @@ class Drone:
                 break
             time.sleep(.4)
         print angle_count
-        time.sleep(10)
+        time.sleep(1)
         
     def take_off(self, altitude):
         if self.mode != "GUIDED":
@@ -89,10 +90,10 @@ class Drone:
             self.vehicle.armed = True
             time.sleep(1)	
             self.vehicle.simple_takeoff(altitude)
-            while self.vehicle.location.global_relative_frame.alt <= altitude * .95:
-                time.sleep(1)
+            while self.vehicle.location.global_relative_frame.alt <= (altitude * .85):
+                time.sleep(.1)
                 print self.vehicle.location.global_relative_frame.alt
-            time.sleep(1)
+            #time.sleep(1)
 
     def land(self):
         self.vehicle.mode = VehicleMode("LAND")
@@ -152,7 +153,7 @@ class Drone:
             time.sleep(1)
 
     def take_off_and_land(self):
-        self.take_off(20)
+        self.take_off(5)
         time.sleep(1)
         #self.send_ned_velocity(0,0,1,1)
         self.move_to_altitude(25)
@@ -196,12 +197,20 @@ class Drone:
 
     def clean_exit(self):
          self.vehicle.mode = VehicleMode("LAND")
+         time.sleep(5)
          print "Program interrupted, switching to LAND mode."
+         self.vehicle.close()
          os._exit(0)
 
 
     def run(self):
-        self.take_off_and_land()
+        self.take_off(5)
+        self.move_to_altitude(6)
+        self.rotate_on_pos()
+        #while True:
+            #print self.vehicle.location.global_relative_frame.alt
+            #time.sleep(.1)
+
 
 
     
