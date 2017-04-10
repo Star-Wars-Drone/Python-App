@@ -6,6 +6,9 @@ import sys
 import tty
 import termios
 import os
+from LidarLiteV3 import LidarLiteV3
+from smbus import SMBus
+
 
 class Drone:
     """ Drone Class"""
@@ -29,8 +32,12 @@ class Drone:
         self.vehicle.mode = VehicleMode("GUIDED")
         self.vehicle.groundspeed = 5;
         self.waypoints = []
-        #self.run()
-        #self.clean_exit()
+        self.target = open('spin_data.txt','w')
+        bus = SMBus(1)
+        self.range_sensor = LidarLiteV3(bus)
+        self.range_sensor.begin(0,0x62)
+        self.run()
+        self.clean_exit()
 
     def __del__(self):
         """Clean up"""
@@ -72,7 +79,11 @@ class Drone:
         while True:
             self.condition_yaw(1,True)
             angle = self.vehicle.attitude.yaw*57.2958
+            dest = self.range_sensor.get_distance(False,0x62)
+            print dest
             print "altitude: {}".format(angle)
+            line = str(angle) + ',' + str(dest) + '\n'
+            self.target.write(line)
             angle_count = angle_count + 1
             if(angle < 0.5 and angle > -1 and angle_count > 2):
                 break
