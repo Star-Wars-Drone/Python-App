@@ -1,29 +1,48 @@
+import threading, time
 
 import numpy as np
 import cv2
 
-cap = cv2.VideoCapture(0)
 
-# Define the codec and create VideoWriter object
-#fourcc = cv2.cv.CV_FOURCC(*'DIVX')
-#out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
-out = cv2.VideoWriter('output.avi', -1, 20.0, (640,480))
 
-while(cap.isOpened()):
-    ret, frame = cap.read()
-    if ret==True:
-        #frame = cv2.flip(frame,0)
 
-        # write the flipped frame
-        out.write(frame)
+class ImageSaver(object):
 
-        cv2.imshow('frame',frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    else:
-        break
+    
+    def __init__(self):
+        self.cam = cv2.VideoCapture(0)
+        self.im_cnt =0;
+        self.vid_cnt = 0;
 
-# Release everything if job is finished
-cap.release()
-out.release()
-cv2.destroyAllWindows()
+        #self.thread = threading.Thread(target=self.save_video, args(self, time)
+
+    def save_image(self):
+        ret, im = self.cam.read()
+        filename = 'IM_CAP_' + str(self.im_cnt) + '.jpg'
+        self.im_cnt = self.im_cnt + 1
+        cv2.imwrite(filename, im)
+        
+    def save_video(self, length=3):
+        """saves a 1 min video by default"""
+        #thread.start()
+        t0 = time.time()
+        filename = 'VID_CAP_' + str(self.vid_cnt) + '.avi'
+
+        # test frame
+        ret, frame = self.cam.read()     
+        height, width, ch = frame.shape  
+
+        self.vid_cnt = self.vid_cnt+1
+        fourcc = cv2.cv.CV_FOURCC(*'XVID')
+        vid_writer = cv2.VideoWriter(filename,fourcc, 20, (width,height)) 
+        while (time.time() - length) < t0:
+            ret, frame = self.cam.read()
+            vid_writer.write(frame)
+        vid_writer.release()
+           
+
+ims = ImageSaver()
+
+ims.save_image()
+
+ims.save_video()
