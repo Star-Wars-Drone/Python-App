@@ -23,7 +23,7 @@ upper_red = np.array([255, 255, 255])
 
 def filters(frame):
     # gray and blur
-    #frame = cv2.GaussianBlur(frame,(0,0),3)
+    frame = cv2.GaussianBlur(frame,(0,0),3)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     mask = cv2.inRange(hsv, low_red, upper_red)
@@ -102,34 +102,43 @@ def is_elliptical(contour):
     (x,y), (MA,ma), angle = cv2.fitEllipse(contour)
     ellipse = cv2.fitEllipse(contour)
 
-    ell_area = 3.14*(MA/2)*(ma/2)
+    ell_area = 3.14159264*(MA/2)*(ma/2)
 
     eps = 0.1*cv2.arcLength(contour,True)
-
     aprx = cv2.approxPolyDP(contour, eps, True)
     area = cv2.contourArea(aprx)
 
-    string = "ell: {0:0.2f}, area: {0:0.2f}".format(ell_area, area)
+    if area > 300:  
+        ratio = float(ell_area)/float(area)
+        string = "area: " + str(area) + "ell_area: " + str(ell_area)
+        #cv2.putText(im, string, (int(x),int(y)), font, 1, (0,255,0), 1)     
+        cv2.line(im, (int(x), int(y)), (int(x),int(y)+int(MA/2)), (255,0,255))
+        cv2.line(im, (int(x), int(y)), (int(x)-int(ma/2),int(y)),(255,0,255))
+    else:
+        return False
 
+    #string = "ell: {0:0.2f}, area: {0:0.2f},\n ratio: {0:0.2f}".format(ell_area, area, ratio)
+    #string = "ratio: {0:0.2f}".format(ratio)
     cv2.ellipse(im, ellipse, (0,0,255),2)
-    cv2.putText(im, string, (int(x),int(y)), font, 1, (0,255,0), 2)
+    #cv2.putText(im, string, (int(x),int(y)), font, 1, (0,255,0), 1)
     #cv2.putText(im,'OpenCV',(10,500), font, 4,(255,255,255),2)
 
 
-    if area > 0.0:  
-        ratio = ell_area/area
 
-        return 0.9 < ratio < 1.1
-    return False
+    if 1.4 < ratio < 1.6:
+        cv2.putText(im, "Balloon", (int(x),int(y)), font, 1, (255,0,255), 9)
+        return True
+    else:
+        return False
 
 
 def is_balloon(contour):
     
-    #sld = is_solid(contour)
-    #rnd = is_round(contour)
+    sld = is_solid(contour)
+    rnd = is_round(contour)
     ep = is_elliptical(contour)
     
-    return ep
+    return (ep and sld and rnd)
 
 
 
@@ -142,9 +151,10 @@ while True:
     # im_with_blobs = cv2.drawKeypoints(im, blob_points, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     #cv2.imshow('points', im_with_blobs)
     cv2.imshow('none', im)
-    
-    hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
+    im = cv2.GaussianBlur(im,(0,0),3)
 
+    hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
+    #hsv = cv2.GaussianBlur(hsv,(0,0),3)
     mask = cv2.inRange(hsv, low_red, upper_red)
     mask = cv2.erode(mask, None, iterations=2)
     mask = cv2.dilate(mask, None, iterations=2)
