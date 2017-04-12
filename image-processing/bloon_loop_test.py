@@ -150,17 +150,47 @@ def find_balloons(image):
 while True:
     ret, im = cam.read()
 
-    cv2.imshow('raw', im)
-    mask = filter_and_mask(im)
+    #cv2.imshow('raw', im)
+    #blob_points = detector.detect(im)
+    # im_with_blobs = cv2.drawKeypoints(im, blob_points, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    #cv2.imshow('points', im_with_blobs)
+    cv2.imshow('none', im)
+    im = cv2.GaussianBlur(im,(0,0),3)
 
-    balloons_list = find_balloons(mask)
+    hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
+    #hsv = cv2.GaussianBlur(hsv,(0,0),3)
+    mask = cv2.inRange(hsv, low_red, upper_red)
+    mask = cv2.erode(mask, None, iterations=2)
+    mask = cv2.dilate(mask, None, iterations=2)
 
-    cv2.imshow('mask', mask)
 
-    cv2.drawContours(im, balloons_list, -1, (0,255,0), 3)
+    #cv2.imshow('mask', mask)
+    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 
-    
+
+    cv2.drawContours(im, cnts, -1, (0,255,0), 3)
+
+    for c in cnts:
+        #peri = cv2.arcLength(c, True)
+        #approx = cv2.approxPolyDP(c, 0.02*peri, True)
+        if is_balloon(c):
+            cv2.drawContours(im, [c], 0, (255,0,0), 8)
+    #frame = cv2.bitwise_and(frame,frame,mask=mask)
+    #gray = cv2.cvtColor(frame, cv2.COLOR_HSV2GRAY)
+   
+    #ret, thresh = cv2.threshold(gray, 127, 255, 0)
+
+
     cv2.imshow('filtered', im)
+
+    # TODO(Ahmed) Consider using contour approx before doing this to 'close' shapes
+    # This may ruin everything actually.
+
+    #for c in contours:
+    #    if is_balloon(c):
+    #        cv2.drawContours(im, c, -1, (255,0,0), 3)
+
+    #cv2.imshow('cnts', im)
 
     k = cv2.waitKey(5) & 0xFF
     if k ==27:
