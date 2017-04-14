@@ -45,4 +45,11 @@ Same as before
 ```
 python drone.py
 ```
+### Run Custom .elf file
+```
+make sitl   (inside of the ArduCopter folder)
+sim_vehicle.py -j4 -l 35.768701,-78.662681,96,180 --out 192.168.1.118:14550
+```
+
+
 
