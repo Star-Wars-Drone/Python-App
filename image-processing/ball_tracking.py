@@ -110,8 +110,8 @@
 
 import cv2
 import numpy as np
-
-
+import math
+from position_vector import PositionVector
 
 
 
@@ -127,15 +127,15 @@ import numpy as np
 #low_red = np.array([300, 70, 70])
 #upper_red = np.array([360, 255, 255])
 
-
 class BalloonFinder(object):
-  # pixels_to_angle_x - converts a number of pixels into an angle in radians 
+
+    # pixels_to_angle_x - converts a number of pixels into an angle in radians 
 	def pixels_to_angle_x(self, num_pixels):
-		return num_pixels * math.radians(self.cam_hfov) / self.img_width
+		return num_pixels * math.radians(70.42) / 640
     
     # pixels_to_angle_y - converts a number of pixels into an angle in radians 
 	def pixels_to_angle_y(self, num_pixels):
-		return num_pixels * math.radians(self.cam_vfov) / self.img_height
+		return num_pixels * math.radians(43.3) / 480
 	
 	def get_distance_from_pixels(self,size_in_pixels, actual_size):
 		if (size_in_pixels == 0):
@@ -287,7 +287,19 @@ class BalloonFinder(object):
 			#approx = cv2.approxPolyDP(c, 0.02*peri, True)
 			if self.is_balloon(c):
 				#cv2.drawContours(image, [c], 0, (255,0,0), 8)
-				balloons.append(c) 
+				balloons.append(c)
+				(x,y), (MA,ma), angle = cv2.fitEllipse(c)
+				ellipse = cv2.fitEllipse(c)
+				eps = 0.1*cv2.arcLength(c,True)
+				aprx = cv2.approxPolyDP(c, eps, True)
+				area = cv2.contourArea(aprx)
+				radius = MA/2
+				print "radius : ", radius
+				distance=bf.get_distance_from_pixels(radius, 0.2)
+				origin=PositionVector(0,0,0)
+				position = bf.project_position(origin,0,0,distance)
+				cv2.circle(im, (int(x), int(y)), int(MA/2),(0, 255, 255), 2)
+				print position
 		return balloons
 
 
@@ -296,19 +308,21 @@ bf = BalloonFinder()
 while True:
 	bloons = bf.find_balloons()
 	print "balloons: ", len(bloons)
-	if(len(bloons)>0):
-		contour=bloons[0]
-		(x,y), (MA,ma), angle = cv2.fitEllipse(contour)
-		ellipse = cv2.fitEllipse(contour)
-		eps = 0.1*cv2.arcLength(contour,True)
-		aprx = cv2.approxPolyDP(contour, eps, True)
-		area = cv2.contourArea(aprx)
-		radius = MA/2
-		print "radius : ", radius
-		distance=bf.get_distance_from_pixels(radius, 0.2)
-		bf.project_position(0,0,0,distance)
-		
-	k = cv2.waitKey(5) & 0xFF
+	#if(len(bloons)>0):
+		#contour=bloons[0]
+		#(x,y), (MA,ma), angle = cv2.fitEllipse(contour)
+		#ellipse = cv2.fitEllipse(contour)
+		#eps = 0.1*cv2.arcLength(contour,True)
+		#aprx = cv2.approxPolyDP(contour, eps, True)
+		#area = cv2.contourArea(aprx)
+		#radius = MA/2
+		#print "radius : ", radius
+		#distance=bf.get_distance_from_pixels(radius, 0.2)
+		#origin=PositionVector(0,0,0)
+		#position = bf.project_position(origin,0,0,distance)
+		#cv2.circle(im, (int(x), int(y)), int(MA/2),(0, 255, 255), 2)
+		#print position
+	k = cv2.waitKey(500) & 0xFF
 	if k ==27:
 		break
 
