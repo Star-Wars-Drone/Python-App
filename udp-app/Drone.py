@@ -284,13 +284,13 @@ class Drone:
             return num_waypoints
 
 
-    def run8(self):                              ### Rotates on waypoints then flies home ###
+    def run(self):                              ### Rotates on waypoints then flies home ###
         filename = "waypoints.txt"
         num_waypoints = self.read_waypoints(filename)
         current_waypoint = 0
         self.take_off(6)
         time.sleep(2)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt - 96)
+        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,6)
         print "Home set as: {}".format(home_location)
         time.sleep(3) 
         while current_waypoint < num_waypoints:
@@ -298,7 +298,7 @@ class Drone:
             current_waypoint = current_waypoint + 1
             self.vehicle.mode = VehicleMode("AUTO")
             time.sleep(2)
-            self.rotate_and_check_360_div_by_n(4)
+            self.rotate_and_check_360_div_by_n(20)
             time.sleep(2)
             self.vehicle.mode = VehicleMode("GUIDED")
             time.sleep(2)
@@ -308,7 +308,7 @@ class Drone:
     
     
     
-    def run7(self):                             ### Flies to waypoints then files home ###
+    def run8(self):                             ### Flies to waypoints then files home ###
         filename = "waypoints.txt"
         num_waypoints = self.read_waypoints(filename)
         current_waypoint = 0
@@ -331,7 +331,7 @@ class Drone:
     
     
     
-    def run(self):                         ### Takes off and rotates then lands ###
+    def run7(self):                         ### Takes off and rotates then lands ###
         self.take_off(6)
         self.vehicle.mode = VehicleMode("AUTO")
         time.sleep(3)
