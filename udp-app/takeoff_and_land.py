@@ -125,7 +125,7 @@ class Drone:
             mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
             0, #confirmation
             heading,    # param 1, yaw in degrees
-            0,          # param 2, yaw speed deg/s
+            .1,          # param 2, yaw speed deg/s
             1,          # param 3, direction -1 ccw, 1 cw
             is_relative, # param 4, relative offset 1, absolute angle 0
             0, 0, 0)    # param 5 ~ 7 not used
@@ -206,7 +206,11 @@ class Drone:
     def run(self):
         self.take_off(5)
         self.move_to_altitude(6)
-        self.rotate_on_pos()
+        self.condition_yaw(0,False)
+        time.sleep(5)
+        self.condition_yaw(90,False)
+        time.sleep(10)
+        #self.rotate_on_pos()
         #while True:
             #print self.vehicle.location.global_relative_frame.alt
             #time.sleep(.1)

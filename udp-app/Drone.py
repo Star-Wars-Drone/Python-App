@@ -6,9 +6,6 @@ import sys
 import tty
 import termios
 import os
-from LidarLiteV3 import LidarLiteV3
-from smbus import SMBus
-
 
 class Drone:
     """ Drone Class"""
@@ -24,20 +21,18 @@ class Drone:
         #self.vehicle.mode = VehicleMode("GUIDED")
         #self.vehicle.groundspeed = 5;
         #self.waypoints = []
-        print "Creating Drone Object"
-        connection_string = "udp:127.0.0.1:5760"
-        self.vehicle = connect(connection_string, wait_ready=True)
-        self.add_callback()
-        self.mode = "GUIDED"
-        self.vehicle.mode = VehicleMode("GUIDED")
-        self.vehicle.groundspeed = 5;
-        self.waypoints = []
-        self.target = open('spin_data.txt','w')
-        bus = SMBus(1)
-        self.range_sensor = LidarLiteV3(bus)
-        self.range_sensor.begin(0,0x62)
-        self.run()
-        self.clean_exit()
+        try:
+            print "Creating Drone Object"
+            connection_string = "udp:127.0.0.1:5760"
+            self.vehicle = connect(connection_string, wait_ready=True)
+            self.add_callback()
+            self.mode = "GUIDED"
+            self.vehicle.mode = VehicleMode("GUIDED")
+            self.vehicle.groundspeed = 2;
+            self.waypoints = []
+            self.run()
+        except KeyboardInterrupt:
+            self.clean_exit()
 
     def __del__(self):
         """Clean up"""
@@ -56,52 +51,45 @@ class Drone:
         self.vehicle.add_attribute_listener('mode.name', self.mode_callback)
         
     def move_to_altitude(self, altitude):
-        if self.mode != "GUIDED":
-            self.vehicle.mode = VehicleMode("GUIDED")
-        #a_location = LocationGlobal(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,altitude)
+        #a_location = LocationGlobal(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,altitude+96)
+        #a_location = LocationGlobalRelative(35.768052,-78.662367,altitude)
         a_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,altitude)
         self.vehicle.simple_goto(a_location)
+        #self.vehicle.commands.goto(a_location)
+        time.sleep(1)
         #loc = self.vehicle.location
         #loc.alt = altitude
         #self.vehicle.simple_goto(loc)
         self.vehicle.flush()
-        while self.vehicle.location.global_relative_frame.alt <= altitude * .95:
+        while self.vehicle.location.global_relative_frame.alt <= altitude * .85:
             time.sleep(1)
             print self.vehicle.location.global_relative_frame.alt
         time.sleep(1)
         
     def rotate_on_pos(self):
-        if self.mode != "GUIDED":
-            self.vehicle.mode = VehicleMode("GUIDED")
         self.condition_yaw(0)
         time.sleep(10)
         angle_count = 0
         while True:
             self.condition_yaw(1,True)
             angle = self.vehicle.attitude.yaw*57.2958
-            dest = self.range_sensor.get_distance(False,0x62)
-            print dest
             print "altitude: {}".format(angle)
-            line = str(angle) + ',' + str(dest) + '\n'
-            self.target.write(line)
             angle_count = angle_count + 1
             if(angle < 0.5 and angle > -1 and angle_count > 2):
                 break
             time.sleep(.4)
         print angle_count
-        time.sleep(10)
+        time.sleep(1)
         
     def take_off(self, altitude):
-        if self.mode != "GUIDED":
-            self.vehicle.mode = VehicleMode("GUIDED")
         if self.vehicle.is_armable:
             self.vehicle.armed = True
             time.sleep(1)	
             self.vehicle.simple_takeoff(altitude)
-            while self.vehicle.location.global_relative_frame.alt <= altitude * .95:
-                time.sleep(1)
+            while self.vehicle.location.global_relative_frame.alt <= (altitude * .85):
+                time.sleep(.1)
                 print self.vehicle.location.global_relative_frame.alt
-            time.sleep(1)
+            #time.sleep(1)
 
     def land(self):
         self.vehicle.mode = VehicleMode("LAND")
@@ -133,7 +121,7 @@ class Drone:
             mavutil.mavlink.MAV_CMD_CONDITION_YAW, #command
             0, #confirmation
             heading,    # param 1, yaw in degrees
-            0,          # param 2, yaw speed deg/s
+            .01,          # param 2, yaw speed deg/s
             1,          # param 3, direction -1 ccw, 1 cw
             is_relative, # param 4, relative offset 1, absolute angle 0
             0, 0, 0)    # param 5 ~ 7 not used
@@ -161,12 +149,12 @@ class Drone:
             time.sleep(1)
 
     def take_off_and_land(self):
-        self.take_off(20)
+        self.take_off(5)
         time.sleep(1)
         #self.send_ned_velocity(0,0,1,1)
         self.move_to_altitude(25)
         time.sleep(1)
-        self.rotate_on_pos()
+        #self.rotate_on_pos()
         time.sleep(1)
         self.land()
 
@@ -203,28 +191,148 @@ class Drone:
             time.sleep(1)
         return
 
+    def goto_position_target_local_ned(self,north, east, down):
+        """ 
+        Send SET_POSITION_TARGET_LOCAL_NED command to request the vehicle fly to a specified 
+        location in the North, East, Down frame.
+
+        It is important to remember that in this frame, positive altitudes are entered as negative 
+        "Down" values. So if down is "10", this will be 10 metres below the home altitude.
+
+        Starting from AC3.3 the method respects the frame setting. Prior to that the frame was
+        ignored. For more information see: 
+        http://dev.ardupilot.com/wiki/copter-commands-in-guided-mode/#set_position_target_local_ned
+
+        See the above link for information on the type_mask (0=enable, 1=ignore). 
+        At time of writing, acceleration and yaw bits are ignored.
+
+        """
+        msg = self.vehicle.message_factory.set_position_target_local_ned_encode(
+            0,       # time_boot_ms (not used)
+            0, 0,    # target system, target component
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED, # frame
+            0b0000111111111000, # type_mask (only positions enabled)
+            north, east, down, # x, y, z positions (or North, East, Down in the MAV_FRAME_BODY_NED frame
+            0, 0, 0, # x, y, z velocity in m/s  (not used)
+            0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
+            0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
+        # send command to vehicle
+        self.vehicle.send_mavlink(msg)
+
     def clean_exit(self):
          self.vehicle.mode = VehicleMode("LAND")
+         time.sleep(5)
          print "Program interrupted, switching to LAND mode."
+         self.vehicle.close()
+         os._exit(0)
+
+    def roate_360_div_by_n(self,n):
+        if n == 0:
+            return
+        print "Moving to North"
+        self.condition_yaw(0,False)
+        time.sleep(5)
+        detla_deg = 360/n
+        print "detla is: {}".format(detla_deg)
+        time.sleep(1)
+        for i in range(n):
+            pos = i*detla_deg
+            print "Moivne to {}".format(pos)
+            self.condition_yaw(pos,False)
+            time.sleep(5)
+        print "Done wiht roate"
+        time.sleep(1)
+
+    def roate_and_check_360_div_by_n(self,n):
+        if n == 0:
+            return
+        print "Moving to North"
+        self.condition_yaw(0,False)
+        time.sleep(5)
+        detla_deg = 360/n
+        print "detla is: {}".format(detla_deg)
+        time.sleep(1)
+        for i in range(n):
+            pos = i*detla_deg
+            print "Moiving to {}".format(pos)
+            self.condition_yaw(pos,False)
+            while True:
+                angle = self.vehicle.attitude.yaw*57.2958
+                if(angle < 0):
+                    angle = 360 + angle
+                print "angle is: {}".format(angle)
+                if pos + 1.5 > angle and pos -1.5 < angle:
+                    break
+                time.sleep(.1)
+            time.sleep(.5)
+        print "Done wiht roate"
+        time.sleep(1)
 
 
     def run(self):
-        #self.take_off_and_land()
-        filename = "waypoints.txt"
-        num_waypoints = self.read_waypoints(filename)
-        current_waypoint = 0
-        self.take_off(20)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt - 96)
-        print "Home set as: {}".format(home_location)
-        time.sleep(1)
-        while current_waypoint < num_waypoints:
-            self.fly_to_waypoint(self.waypoints[current_waypoint])
-            self.rotate_on_pos()
-            current_waypoint = current_waypoint + 1
-            time.sleep(1)
-        print "Flying to home location: {}".format(home_location)
-        self.fly_to_waypoint(home_location)
+        self.take_off(6)
+        self.vehicle.mode = VehicleMode("AUTO")
+        time.sleep(3)
+        self.roate_and_check_360_div_by_n(4)
         self.land()
+
+
+
+
+    def run5(self):
+        print "Taking off"
+        self.take_off(7)
+        time.sleep(5)
+        print "Change to new alt"
+        self.goto_position_target_local_ned(50,50,-5)
+        time.sleep(120)
+        self.goto_position_target_local_ned(50,-50,-5)
+        time.sleep(120)
+        #self.move_to_altitude(7)
+        #self.send_ned_velocity(0,0,1,.1)
+        time.sleep(5)
+        self.roate_and_check_360_div_by_n(4)
+        self.clean_exit()            
+
+    def run1(self):
+        print "Taking off"
+        self.take_off(7)
+        time.sleep(1)
+        print "Change to new alt"
+        self.move_to_altitude(5)
+        time.sleep(1)
+        self.roate_360_div_by_n(4)
+        self.clean_exit()            
+        
+
+    def run2(self):
+        print "Taking off"
+        self.take_off(7)
+        time.sleep(1)
+        print "Change to new alt"
+        self.move_to_altitude(5)
+        time.sleep(1)
+        print "Moving to Norht"
+        self.condition_yaw(0,False)
+        time.sleep(5)
+        print "Moving to west"
+        self.condition_yaw(90,False)
+        time.sleep(5)
+        print "Moving to south"
+        self.condition_yaw(180,False)
+        time.sleep(5)
+        print "Moving to east"
+        self.condition_yaw(270,False)
+        time.sleep(5)
+        print "Moving to North"
+        self.condition_yaw(0,False)
+        time.sleep(5)
+        self.clean_exit()            
+        #self.rotate_on_pos()
+        #while True:
+            #print self.vehicle.location.global_relative_frame.alt
+            #time.sleep(.1)
+
 
 
     
@@ -233,7 +341,6 @@ class Drone:
 if __name__ == '__main__':
     print "running from command line"
     Drone()
-
 
 
 
