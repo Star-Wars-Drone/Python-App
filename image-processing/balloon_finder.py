@@ -27,6 +27,31 @@ class BalloonFinder(object):
         self.low_red = np.array([0, 100, 100])
         self.upper_red = np.array([255, 255, 255])
 
+        #TODO(Ahmed): Replace with actual values.
+        self.balloon_mat = np.float32([[1,1,0],
+                                       [2,2,0],
+                                       [3,3,0],
+                                       [4,4,0]])
+
+        self.cam_matrix = np.zeros((3,3), np.float32)
+
+        self.cam_matrix[0,0] = 1.9961704327353971e+03
+        self.cam_matrix[0,1] = 0.0
+        self.cam_matrix[0,2] = 3.1950000000000000e+02
+        self.cam_matrix[1,0] = 0. 
+        self.cam_matrix[1,1] = 1.9961704327353971e+03
+        self.cam_matrix[1,2] = 2.3950000000000000e+02
+        self.cam_matrix[2,0] = 0.
+        self.cam_matrix[2,1] = 0.
+        self.cam_matrix[2,2] = 1.
+
+        self.distcoeffs = np.zeros((1,5), np.float32)
+        self.distcoeffs[0,0] = 1.8175523764227883e+00
+        self.distcoeffs[0,1] = -8.7919484257162480e+01
+        self.distcoeffs[0,2] = 0.
+        self.distcoeffs[0,3] = 0.
+        self.distcoeffs[0,4] = 1.2459859993672681e+03
+
     def save_image(self):
         ret, im = self.cam.read()
         filename = 'IM_CAP_' + str(self.im_cnt) + '.jpg'
@@ -126,7 +151,6 @@ class BalloonFinder(object):
         return (ep and sld and rnd)
 
 
-
     def filter_and_mask(self, frame):
         #blur = cv2.GaussianBlur(frame,(0,0),3)
         cv2.imshow('filtering', frame)
@@ -148,6 +172,7 @@ class BalloonFinder(object):
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         balloons = []
         
+
         #TODO(Ahmed): figure out how to make this useful.
         for c in cnts:
             #peri = cv2.arcLength(c, True)
@@ -155,13 +180,49 @@ class BalloonFinder(object):
             if self.is_balloon(c):
                 #cv2.drawContours(image, [c], 0, (255,0,0), 8)
                 balloons.append(c) 
-        return balloons
+        return im, balloons
 
+    def extreme_points(cnt):
+        left = tuple(cnt[cnt[:,:,0].argmin()][0])
+        right = tuple(cnt[cnt[:,:,0].argmax()][0])
+        top = tuple(cnt[cnt[:,:,1].argmin()][0])
+        bottom = tuple(cnt[cnt[:,:,1].argmax()][0])
+        return np.float32([left, right, top, bottom])
 
+    def find_vector(self, bloon_cnt):
+        outline = self.extreme_points(bloon_cnt)
+        
+        ret, rvec, tvec = cv2.solvePnP(self.balloon_mat, outline, self.cam_matrix, self.distcoeffs)
+ 
+        return tvec
+        
 
 bf = BalloonFinder()
 while True:
-    bloons = bf.find_balloons()
+    im, bloons = bf.find_balloons()
+    cann_im = im.copy()
+
+    msk = bf.filter_and_mask(im)
+    cnts = cv2.findContours(msk.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+     
+    
+    cann = cv2.Canny(im, 5,100)
+    cv2.drawContours(im, cnts,-1,(255,0,0),8)
+    
+    cann_cnts = cv2.findContours(cann.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+     
+    cv2.drawContours(cann_im, cann_cnts,-1,(255,0,0),8)
+    
+    
+    #for c in cann_cnts:
+    #    if bf.is_balloon(c):
+    #        cv2.drawContours(cann_im, [c], 0, (255,0,0), 8)
+
+
+    cv2.imshow('canny ablloons', cann_im)
+    
+    cv2.imshow('canny', cann)
+
     print "balloons: ", len(bloons)
     k = cv2.waitKey(5) & 0xFF
     if k ==27:
