@@ -284,7 +284,7 @@ class Drone:
             return num_waypoints
 
 
-    def run(self):                              ### Rotates on waypoints then flies home ###
+    def run8(self):                              ### Rotates on waypoints then flies home ###
         filename = "waypoints.txt"
         num_waypoints = self.read_waypoints(filename)
         current_waypoint = 0
@@ -331,7 +331,7 @@ class Drone:
     
     
     
-    def run6(self):                         ### Takes off and rotates then lands ###
+    def run(self):                         ### Takes off and rotates then lands ###
         self.take_off(6)
         self.vehicle.mode = VehicleMode("AUTO")
         time.sleep(3)
