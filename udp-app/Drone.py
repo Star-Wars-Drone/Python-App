@@ -243,7 +243,7 @@ class Drone:
         print "Done wiht roate"
         time.sleep(1)
 
-    def roate_and_check_360_div_by_n(self,n):
+    def rotate_and_check_360_div_by_n(self,n):
         if n == 0:
             return
         print "Moving to North"
@@ -262,18 +262,80 @@ class Drone:
                     angle = 360 + angle
                 print "angle is: {}".format(angle)
                 if pos + 1.5 > angle and pos -1.5 < angle:
-                    break
+                    time.sleep(2)
+                    if pos + 1.5 > angle and pos -1.5 < angle:
+                        time.sleep(2)
+                        break
                 time.sleep(.1)
             time.sleep(.5)
-        print "Done wiht roate"
+        print "Done with rotate"
         time.sleep(1)
 
 
-    def run(self):
+    def read_waypoints(self,filename):
+        """Gets waypoints from a file"""
+        with open(filename,"r") as filestream:
+            num_waypoints = 0
+            for line in filestream:
+                currentline = line.rstrip("\n").split(",")
+                #self.waypoints.extend(LocationGlobal(float(currentline[0]),float(currentline[1]),float(currentline[2])))
+                self.waypoints.append(LocationGlobalRelative(float(currentline[0]),float(currentline[1]),float(currentline[2])))
+                num_waypoints = num_waypoints + 1
+            return num_waypoints
+
+
+    def run(self):                              ### Rotates on waypoints then flies home ###
+        filename = "waypoints.txt"
+        num_waypoints = self.read_waypoints(filename)
+        current_waypoint = 0
+        self.take_off(6)
+        time.sleep(2)
+        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,6)
+        print "Home set as: {}".format(home_location)
+        time.sleep(3) 
+        while current_waypoint < num_waypoints:
+            self.fly_to_waypoint(self.waypoints[current_waypoint])
+            current_waypoint = current_waypoint + 1
+            self.vehicle.mode = VehicleMode("AUTO")
+            time.sleep(2)
+            self.rotate_and_check_360_div_by_n(20)
+            time.sleep(2)
+            self.vehicle.mode = VehicleMode("GUIDED")
+            time.sleep(2)
+        print "Flying to home location: {}".format(home_location)
+        self.fly_to_waypoint(home_location)
+        self.land()
+    
+    
+    
+    def run8(self):                             ### Flies to waypoints then files home ###
+        filename = "waypoints.txt"
+        num_waypoints = self.read_waypoints(filename)
+        current_waypoint = 0
+        self.take_off(6)
+        time.sleep(2)
+        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt - 96)
+        print "Home set as: {}".format(home_location)
+        time.sleep(3) 
+        while current_waypoint < num_waypoints:
+            self.fly_to_waypoint(self.waypoints[current_waypoint])
+            current_waypoint = current_waypoint + 1
+            time.sleep(2)
+        print "Flying to home location: {}".format(home_location)
+        self.fly_to_waypoint(home_location)
+        self.land()
+    
+    
+    
+    
+    
+    
+    
+    def run7(self):                         ### Takes off and rotates then lands ###
         self.take_off(6)
         self.vehicle.mode = VehicleMode("AUTO")
         time.sleep(3)
-        self.roate_and_check_360_div_by_n(4)
+        self.rotate_and_check_360_div_by_n(4)
         self.land()
 
 
