@@ -1,5 +1,4 @@
 # USAGE
-# python ball_tracking.py --video ball_tracking_example.mp4
 # python ball_tracking.py
 
 # import the necessary packages
@@ -158,8 +157,8 @@ class BalloonFinder(object):
 		self.cam = cv2.VideoCapture(0)
 		self.im_cnt =0;
 		self.vid_cnt = 0;
-		self.low_red = np.array([0, 100, 100])
-		self.upper_red = np.array([255, 255, 255])
+		self.low_red = np.array([101, 87, 122])
+		self.upper_red = np.array([217, 255, 255])
 
 	def save_image(self):
 		ret, im = self.cam.read()
@@ -288,18 +287,14 @@ class BalloonFinder(object):
 			if self.is_balloon(c):
 				#cv2.drawContours(image, [c], 0, (255,0,0), 8)
 				balloons.append(c)
-				(x,y), (MA,ma), angle = cv2.fitEllipse(c)
-				ellipse = cv2.fitEllipse(c)
-				eps = 0.1*cv2.arcLength(c,True)
-				aprx = cv2.approxPolyDP(c, eps, True)
-				area = cv2.contourArea(aprx)
-				radius = MA/2
-				print "radius : ", radius
-				distance=bf.get_distance_from_pixels(radius, 0.2)
-				origin=PositionVector(0,0,0)
-				position = bf.project_position(origin,0,0,distance)
-				cv2.circle(im, (int(x), int(y)), int(MA/2),(0, 255, 255), 2)
-				print position
+				((x, y), radius) = cv2.minEnclosingCircle(c)
+				M = cv2.moments(c)
+				center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+				# draw the circle and centroid on the frame,
+				# then update the list of tracked points
+				cv2.circle(im, (int(x), int(y)), int(radius),
+				(0, 255, 255), 2)
+				cv2.circle(im, center, 5, (0, 0, 255), -1)
 		return balloons
 
 
