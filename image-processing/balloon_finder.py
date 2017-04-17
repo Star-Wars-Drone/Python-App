@@ -27,11 +27,11 @@ class BalloonFinder(object):
         self.low_red = np.array([0, 100, 100])
         self.upper_red = np.array([255, 255, 255])
 
-        #TODO(Ahmed): Replace with actual values.
-        self.balloon_mat = np.float32([[1,1,0],
-                                       [2,2,0],
-                                       [3,3,0],
-                                       [4,4,0]])
+        #TODO(Ahmed): Replace with actual valuesi.
+        self.balloon_mat = np.float32([[4,0,0],
+                                       [-4,0,0],
+                                       [0,3.5,0],
+                                       [0,-3.5,0]])
 
         self.cam_matrix = np.zeros((3,3), np.float32)
 
@@ -182,7 +182,7 @@ class BalloonFinder(object):
                 balloons.append(c) 
         return im, balloons
 
-    def extreme_points(cnt):
+    def extreme_points(self, cnt):
         left = tuple(cnt[cnt[:,:,0].argmin()][0])
         right = tuple(cnt[cnt[:,:,0].argmax()][0])
         top = tuple(cnt[cnt[:,:,1].argmin()][0])
@@ -209,21 +209,12 @@ while True:
     cann = cv2.Canny(im, 5,100)
     cv2.drawContours(im, cnts,-1,(255,0,0),8)
     
-    cann_cnts = cv2.findContours(cann.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-     
-    cv2.drawContours(cann_im, cann_cnts,-1,(255,0,0),8)
-    
-    
-    #for c in cann_cnts:
-    #    if bf.is_balloon(c):
-    #        cv2.drawContours(cann_im, [c], 0, (255,0,0), 8)
-
-
-    cv2.imshow('canny ablloons', cann_im)
-    
+    for b in bloons:
+        tvec = bf.find_vector(b)
+        print tvec
     cv2.imshow('canny', cann)
 
-    print "balloons: ", len(bloons)
+    #print "balloons: ", len(bloons)
     k = cv2.waitKey(5) & 0xFF
     if k ==27:
         break
