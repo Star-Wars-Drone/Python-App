@@ -35,22 +35,22 @@ class BalloonFinder(object):
 
         self.cam_matrix = np.zeros((3,3), np.float32)
 
-        self.cam_matrix[0,0] = 1.9961704327353971e+03
+        self.cam_matrix[0,0] =  6.0624213847706199e+02
         self.cam_matrix[0,1] = 0.0
         self.cam_matrix[0,2] = 3.1950000000000000e+02
         self.cam_matrix[1,0] = 0. 
-        self.cam_matrix[1,1] = 1.9961704327353971e+03
+        self.cam_matrix[1,1] = 6.0624213847706199e+02
         self.cam_matrix[1,2] = 2.3950000000000000e+02
         self.cam_matrix[2,0] = 0.
         self.cam_matrix[2,1] = 0.
         self.cam_matrix[2,2] = 1.
 
         self.distcoeffs = np.zeros((1,5), np.float32)
-        self.distcoeffs[0,0] = 1.8175523764227883e+00
-        self.distcoeffs[0,1] = -8.7919484257162480e+01
+        self.distcoeffs[0,0] = 8.3207429127291330e-02
+        self.distcoeffs[0,1] = 3.1414300165829484e-01
         self.distcoeffs[0,2] = 0.
         self.distcoeffs[0,3] = 0.
-        self.distcoeffs[0,4] = 1.2459859993672681e+03
+        self.distcoeffs[0,4] = -4.0330543366435345e-01
 
     def save_image(self):
         ret, im = self.cam.read()
@@ -195,7 +195,7 @@ class BalloonFinder(object):
         ret, rvec, tvec = cv2.solvePnP(self.balloon_mat, outline, self.cam_matrix, self.distcoeffs)
  
         return tvec
-        
+
 
 bf = BalloonFinder()
 while True:
