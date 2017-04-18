@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import math
 
 
 
@@ -195,7 +195,28 @@ class BalloonFinder(object):
         ret, rvec, tvec = cv2.solvePnP(self.balloon_mat, outline, self.cam_matrix, self.distcoeffs)
  
         return tvec
-
+    
+    def find_waypoint(self,current_gps_location,bloon_cnt):
+        tvec = self.find_vector(bloon_cnt)
+        #spherical model of the earth
+        #lat, long in radians and altitude in meters
+        current_lat = current_gps_location[0]
+        current_lon = current_gps_location[1]
+        current_alt = current_gps_location[2]
+        r = 6371000 + current_alt
+        current_x = r*math.cos(current_lat)*math.cos(current_lon)
+        current_y = r*math.cos(current_lat)*math.sin(current_lon)
+        current_z = r*math.sin(current_lat)
+        new_x = current_x + tvec[0]
+        new_y = current_y + tvec[1]
+        new_z = current_z + tvec[2]
+        new_lon = math.atan2(new_y,new_x)
+        lat_cal_denom = math.sqrt((new_x*new_x) + (new_y*new_y))
+        new_lat = math.atan2(new_z,lat_cal_denom)
+        new_r = math.sqrt((new_x*new_x)+(new_y*new_y)+(new_z*new_z))
+        new_altitude = new_r-6371000
+        waypoint=[new_lat,new_lon,new_altitude]
+        return waypoint
 
 bf = BalloonFinder()
 while True:
@@ -208,12 +229,12 @@ while True:
     
     cann = cv2.Canny(im, 5,100)
     cv2.drawContours(im, cnts,-1,(255,0,0),8)
-    
+
+    gps_cord=[0.624371939852,-1.37329479882,30]
     for b in bloons:
-        tvec = bf.find_vector(b)
+        tvec = bf.find_waypoint(gps_cord,b)
         print tvec
     cv2.imshow('canny', cann)
-
     #print "balloons: ", len(bloons)
     k = cv2.waitKey(5) & 0xFF
     if k ==27:
