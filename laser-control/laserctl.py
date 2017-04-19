@@ -40,8 +40,8 @@ class Laser:
 
 if __name__ == "__main__":
     zap = Laser()
-    zap.trigger(5)
-    time.sleep(10)
-    zap.trigger(1)
-    time.sleep(5)
+    zap.trigger(.25)
+#    time.sleep(10)
+ #   zap.trigger(1)
+    time.sleep(2) #MAKE SURE THE switch_off gets called!! either by timeout or manually calling switch_off()
     print("Laser test done")

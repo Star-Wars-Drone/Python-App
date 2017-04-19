@@ -1,11 +1,14 @@
 from dronekit import connect, VehicleMode, LocationGlobal, LocationGlobalRelative
 from pymavlink import mavutil
+from LidarLiteV3 import LidarLiteV3
+from smbus import SMBus
 import time
 import math
 import sys
 import tty
 import termios
 import os
+from laserctl import Laser
 
 class Drone:
     """ Drone Class"""
@@ -26,10 +29,11 @@ class Drone:
             connection_string = "udp:127.0.0.1:5760"
             self.vehicle = connect(connection_string, wait_ready=True)
             self.add_callback()
-            self.mode = "GUIDED"
             self.vehicle.mode = VehicleMode("GUIDED")
-            self.vehicle.groundspeed = 2;
+            self.vehicle.groundspeed = 1;
             self.waypoints = []
+            print "Entering run"
+            #self.countDown()
             self.run()
         except KeyboardInterrupt:
             self.clean_exit()
@@ -81,15 +85,54 @@ class Drone:
         print angle_count
         time.sleep(1)
         
+    def countDown(self):
+        for i in range(20):
+            print "Count Down: {}".format(20 - i)
+            time.sleep(1)
+
     def take_off(self, altitude):
-        if self.vehicle.is_armable:
-            self.vehicle.armed = True
-            time.sleep(1)	
-            self.vehicle.simple_takeoff(altitude)
-            while self.vehicle.location.global_relative_frame.alt <= (altitude * .85):
-                time.sleep(.1)
-                print self.vehicle.location.global_relative_frame.alt
-            #time.sleep(1)
+        
+        """
+        Arms vehicle and fly to aTargetAltitude.
+        """
+
+        print "Basic pre-arm checks"
+        # Don't try to arm until autopilot is ready
+        while not self.vehicle.is_armable:
+            print " Waiting for vehicle to initialise..."
+            time.sleep(1)
+
+        print "Arming motors"
+        # Copter should arm in GUIDED mode
+        self.vehicle.mode    = VehicleMode("GUIDED")
+        self.vehicle.armed   = True
+
+        # Confirm vehicle armed before attempting to take off
+        while not self.vehicle.armed:
+            print " Waiting for arming..."
+            time.sleep(1)
+
+        print "Taking off!"
+        self.vehicle.simple_takeoff(altitude) # Take off to target altitude
+
+        # Wait until the vehicle reaches a safe height before processing the goto (otherwise the command
+        #  after Vehicle.simple_takeoff will execute immediately).
+        while True:
+            print " Altitude: ", self.vehicle.location.global_relative_frame.alt
+            #Break and return from function just below target altitude.
+            if self.vehicle.location.global_relative_frame.alt>=altitude*0.95:
+                print "Reached target altitude"
+                break
+            time.sleep(1)
+            
+            #if self.vehicle.is_armable:
+            #    self.vehicle.armed = True
+            #    time.sleep(1)	
+            #    self.vehicle.simple_takeoff(altitude)
+            #    while self.vehicle.location.global_relative_frame.alt <= (altitude * .85):
+            #        time.sleep(1)
+            #        print self.vehicle.location.global_relative_frame.alt
+                #time.sleep(1)
 
     def land(self):
         self.vehicle.mode = VehicleMode("LAND")
@@ -283,6 +326,35 @@ class Drone:
                 num_waypoints = num_waypoints + 1
             return num_waypoints
 
+    def kill(self):
+        bus = SMBus(1)
+        range_sensor = LidarLiteV3(bus)
+        range_sensor.begin(0,0x62)
+        dest = range_sensor.get_distance(False,0x62)
+        print "Distance: {}".format(dest)
+        if dest < 160:
+            print "Killing"
+            laser = Laser()
+            laser.trigger(.45)
+            time.sleep(2) #MAKE SURE THE switch_off gets called!! either by timeout or manually calling switch_off()
+            print("Laser test done")
+        bus.close()
+
+    def init_checks(self):
+        print "Basic pre-arm checks"
+        # Don't let the user try to arm until autopilot is ready
+        while not self.vehicle.is_armable:
+            print " Waiting for vehicle to initialise..."
+            time.sleep(1)
+
+
+        #if self.vehicle.mode.name == "INITIALISING":
+            #print "Waiting for vehicle to initialise"
+            #time.sleep(1)
+        while self.vehicle.gps_0.fix_type < 2:
+            print "Waiting for GPS...:", self.vehicle.gps_0.fix_type
+            time.sleep(1)
+
     def run99(self):
         bf = BalloonFinder()
         self.take_off(6)
@@ -295,8 +367,6 @@ class Drone:
                 # if multiple, find one most likely to be true.
                 if len(ballon_list) > 1:
                     true_balloon = bf.pick_best_balloon(balloon_list)
-
-    
                 # find the vector to that balloon
                 tvec = bf.find_vector(true_balloon)
                 self.goto_position_target_local_ned(tvec[2],-tvec[0],tvec[1])
@@ -325,6 +395,14 @@ class Drone:
         self.land()
             
     def run(self):
+        self.take_off(5)
+
+    def run12(self):
+        print "Testing Laser"
+        self.kill()
+        print "Done Test"
+    
+    def run11(self):
         self.take_off(6)
         self.goto_position_target_local_ned(100,0,0)
         time.sleep(8)
