@@ -24,8 +24,13 @@ class BalloonFinder(object):
         self.cam = cv2.VideoCapture(0)
         self.im_cnt =0;
         self.vid_cnt = 0;
-        self.low_red = np.array([0, 100, 100])
-        self.upper_red = np.array([255, 255, 255])
+        #self.low_red = np.array([0, 100, 100])
+        #self.upper_red = np.array([255, 255, 255])
+        
+        # thresh from drone cam
+        self.low_red = np.array([121,0,149])
+        self.upper_red = np.array([255,255,255])
+
 
         #TODO(Ahmed): Replace with actual valuesi.
         self.balloon_mat = np.float32([[4,0,0],
@@ -226,57 +231,47 @@ class BalloonFinder(object):
         waypoint=[new_lat,new_lon,new_altitude]
         return waypoint
 
-bf = BalloonFinder()
-while True:
-    ###############################################
-    # General usage example:
-
-    # Dummy value for laptp testing.
-    gps_cord=[0.624371939852,-1.37329479882,30]   
-    # find full list of selected balloons.
-    # and an image with them drawn on.
-    im, balloon_list = bf.find_balloons()
-    msk = bf.filter_and_mask(im)
-    cnts = cv2.findContours(msk.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-     
-    
-    cann = cv2.Canny(im, 5,100)
-    #cv2.drawContours(im, cnts,-1,(255,0,0),8)
-    
-    cann_cnts = cv2.findContours(cann.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-     
-    #cv2.drawContours(cann_im, cann_cnts,-1,(255,0,0),8)
-    
-    
-    for c in cann_cnts:
-        if bf.is_balloon(c):
-            #cv2.drawContours(cann_im, [c], 0, (255,0,0), 8)
-            print "FOUND BALLOON!"
-
-    for b in balloon_list:
-        # find the vector to that balloon
-        tvec = bf.find_vector(b)
-
-        # calculate waypoint to balloon
 
 
-            
-        print "====Vector==================="
-        print tvec
-        print "============================="
-        ###################################################
+def main():
+    bf = BalloonFinder()
+    while True:
+        ###############################################
+        # General usage example:
+
+        # Dummy value for laptp testing.
+        gps_cord=[0.624371939852,-1.37329479882,30]   
+        # find full list of selected balloons.
+        # and an image with them drawn on.
+        im, balloon_list = bf.find_balloons()
+        
+        for b in balloon_list:
+            # find the vector to that balloon
+            tvec = bf.find_vector(b)
+
+            # calculate waypoint to balloon
 
 
-    #for b in bloons:
-    #    tvec = bf.find_vector(b)
-    #    #tvec = bf.find_waypoint(gps_cord,b)
-    #    print tvec
-    #print "balloons: ", len(bloons)
-   # cv2.imshow('canny ablloons', cann_im)
-    
-   # cv2.imshow('canny', cann)
+                
+            print "====Vector==================="
+            print tvec
+            print "============================="
+            ###################################################
 
-    k = cv2.waitKey(5) & 0xFF
-    if k ==27:
-        break
 
+        #for b in bloons:
+        #    tvec = bf.find_vector(b)
+        #    #tvec = bf.find_waypoint(gps_cord,b)
+        #    print tvec
+        #print "balloons: ", len(bloons)
+       # cv2.imshow('canny ablloons', cann_im)
+        
+       # cv2.imshow('canny', cann)
+
+        k = cv2.waitKey(5) & 0xFF
+        if k ==27:
+            break
+
+
+if __name__ == '__main__':
+    main()
