@@ -195,6 +195,15 @@ class BalloonFinder(object):
         ret, rvec, tvec = cv2.solvePnP(self.balloon_mat, outline, self.cam_matrix, self.distcoeffs)
  
         return tvec
+
+    def pick_best_balloon(self, balloon_list):
+        """recieves list of contours it suspects to be balloons and determines which one is
+        most likely to be the true balloon."""
+
+        b = max(balloon_list, key=cv2contourArea)
+        
+        return b
+        
     
     def find_waypoint(self,current_gps_location,bloon_cnt):
         tvec = self.find_vector(bloon_cnt)
