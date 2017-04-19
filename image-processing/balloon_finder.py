@@ -229,22 +229,39 @@ class BalloonFinder(object):
 
 bf = BalloonFinder()
 while True:
-    im, bloons = bf.find_balloons()
-    cann_im = im.copy()
+    ###############################################
+    # General usage example:
 
-    msk = bf.filter_and_mask(im)
-    cnts = cv2.findContours(msk.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-     
+    # Dummy value for laptp testing.
+    gps_cord=[0.624371939852,-1.37329479882,30]   
+    # find full list of selected balloons.
+    # and an image with them drawn on.
+    im, balloon_list = bf.find_balloons()
+
+    # if multiple, find one most likely to be true.
+    if len(ballon_list) > 1:
+        true_balloon = bf.pick_best_balloon(balloon_list)
+
     
-    cann = cv2.Canny(im, 5,100)
-    cv2.drawContours(im, cnts,-1,(255,0,0),8)
+    # find the vector to that balloon
+    tvec = bf.find_vector(true_balloon)
 
-    gps_cord=[0.624371939852,-1.37329479882,30]
-    for b in bloons:
-        tvec = bf.find_vector(b)
-        #tvec = bf.find_waypoint(gps_cord,b)
-        print tvec
-    cv2.imshow('canny', cann)
+    # calculate waypoint to balloon
+    waypoint = bf.find_waypoint(true_balloon)
+
+    print "====Vector==================="
+    print tvec
+    print "============================="
+    print "====Waypoint================="
+    print waypoint
+    print "============================="
+    ###################################################
+
+
+    #for b in bloons:
+    #    tvec = bf.find_vector(b)
+    #    #tvec = bf.find_waypoint(gps_cord,b)
+    #    print tvec
     #print "balloons: ", len(bloons)
     k = cv2.waitKey(5) & 0xFF
     if k ==27:
