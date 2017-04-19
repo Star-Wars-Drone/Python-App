@@ -283,7 +283,47 @@ class Drone:
                 num_waypoints = num_waypoints + 1
             return num_waypoints
 
+    def run99(self):
+        bf = BalloonFinder()
+        self.take_off(6)
+        time.sleep(8)
+        rotated_angle=0
+        detla_deg = 10
+        while rotated_angle<360:
+            im, balloon_list = bf.find_balloons()
+            if len(balloon_list)>0:
+                # if multiple, find one most likely to be true.
+                if len(ballon_list) > 1:
+                    true_balloon = bf.pick_best_balloon(balloon_list)
 
+    
+                # find the vector to that balloon
+                tvec = bf.find_vector(true_balloon)
+                self.goto_position_target_local_ned(tvec[2],-tvec[0],tvec[1])
+                time.sleep(10)
+                rotated_angle=0
+            else:
+                #rotate
+                pos=rotated_angle+delta
+                self.condition_yaw(pos,False)
+                time.sleep(5)
+                while True:
+                    angle = self.vehicle.attitude.yaw*57.2958
+                    if(angle < 0):
+                        angle = 360 + angle
+                    print "angle is: {}".format(angle)
+                    if pos + 1.5 > angle and pos -1.5 < angle:
+                        time.sleep(2)
+                        if pos + 1.5 > angle and pos -1.5 < angle:
+                            time.sleep(2)
+                            break
+                    time.sleep(.1)
+                time.sleep(.5)
+                print "Done with rotate"
+                time.sleep(1)
+                rotated_angle=rotated_angle+delta_angle
+        self.land()
+            
     def run(self):
         self.take_off(6)
         self.goto_position_target_local_ned(100,0,0)
