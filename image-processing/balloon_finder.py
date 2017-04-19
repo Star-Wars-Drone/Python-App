@@ -30,27 +30,27 @@ class BalloonFinder(object):
         #TODO(Ahmed): Replace with actual valuesi.
         self.balloon_mat = np.float32([[4,0,0],
                                        [-4,0,0],
-                                       [0,3.5,0],
-                                       [0,-3.5,0]])
+                                       [0,5,0],
+                                       [0,-5,0]])
 
         self.cam_matrix = np.zeros((3,3), np.float32)
 
-        self.cam_matrix[0,0] =  6.0624213847706199e+02
+        self.cam_matrix[0,0] = 7.6292554546337738e+02
         self.cam_matrix[0,1] = 0.0
         self.cam_matrix[0,2] = 3.1950000000000000e+02
         self.cam_matrix[1,0] = 0. 
-        self.cam_matrix[1,1] = 6.0624213847706199e+02
+        self.cam_matrix[1,1] = 7.6292554546337738e+02
         self.cam_matrix[1,2] = 2.3950000000000000e+02
         self.cam_matrix[2,0] = 0.
         self.cam_matrix[2,1] = 0.
         self.cam_matrix[2,2] = 1.
 
         self.distcoeffs = np.zeros((1,5), np.float32)
-        self.distcoeffs[0,0] = 8.3207429127291330e-02
-        self.distcoeffs[0,1] = 3.1414300165829484e-01
+        self.distcoeffs[0,0] = -4.5614114539630291e-01
+        self.distcoeffs[0,1] = 8.8158732627801784e-01
         self.distcoeffs[0,2] = 0.
         self.distcoeffs[0,3] = 0.
-        self.distcoeffs[0,4] = -4.0330543366435345e-01
+        self.distcoeffs[0,4] = -2.3488206318160914e+00
 
     def save_image(self):
         ret, im = self.cam.read()
@@ -232,7 +232,8 @@ while True:
 
     gps_cord=[0.624371939852,-1.37329479882,30]
     for b in bloons:
-        tvec = bf.find_waypoint(gps_cord,b)
+        tvec = bf.find_vector(b)
+        #tvec = bf.find_waypoint(gps_cord,b)
         print tvec
     cv2.imshow('canny', cann)
     #print "balloons: ", len(bloons)
