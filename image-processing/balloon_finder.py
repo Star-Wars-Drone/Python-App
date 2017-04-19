@@ -153,7 +153,6 @@ class BalloonFinder(object):
 
     def filter_and_mask(self, frame):
         #blur = cv2.GaussianBlur(frame,(0,0),3)
-        cv2.imshow('filtering', frame)
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, self.low_red, self.upper_red)
         mask = cv2.erode(mask, None, iterations=2)
