@@ -21,7 +21,7 @@ import math
 class BalloonFinder(object):
 
     def __init__(self):
-        self.cam = cv2.VideoCapture(1)
+        self.cam = cv2.VideoCapture(0)
         self.im_cnt =0;
         self.vid_cnt = 0;
         self.low_red = np.array([0, 100, 100])
@@ -254,24 +254,18 @@ while True:
             #cv2.drawContours(cann_im, [c], 0, (255,0,0), 8)
             print "FOUND BALLOON!"
 
-    # if multiple, find one most likely to be true.
-    if len(ballon_list) > 1:
-        true_balloon = bf.pick_best_balloon(balloon_list)
+    for b in balloon_list:
+        # find the vector to that balloon
+        tvec = bf.find_vector(b)
 
-    
-    # find the vector to that balloon
-    tvec = bf.find_vector(true_balloon)
+        # calculate waypoint to balloon
 
-    # calculate waypoint to balloon
-    waypoint = bf.find_waypoint(true_balloon)
 
-    print "====Vector==================="
-    print tvec
-    print "============================="
-    print "====Waypoint================="
-    print waypoint
-    print "============================="
-    ###################################################
+            
+        print "====Vector==================="
+        print tvec
+        print "============================="
+        ###################################################
 
 
     #for b in bloons:
@@ -283,7 +277,6 @@ while True:
     
    # cv2.imshow('canny', cann)
 
-    print "balloons: ", len(bloons)
     k = cv2.waitKey(5) & 0xFF
     if k ==27:
         break
