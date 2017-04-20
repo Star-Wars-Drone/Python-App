@@ -9,6 +9,7 @@ import tty
 import termios
 import os
 from laserctl import Laser
+from balloon_finder import BalloonFinder
 
 class Drone:
     """ Drone Class"""
@@ -30,10 +31,10 @@ class Drone:
             self.vehicle = connect(connection_string, wait_ready=True)
             self.add_callback()
             self.vehicle.mode = VehicleMode("GUIDED")
-            self.vehicle.groundspeed = 1;
+            self.vehicle.groundspeed = 2;
             self.waypoints = []
             print "Entering run"
-            #self.countDown()
+            #self.test_check_center()
             self.run()
         except KeyboardInterrupt:
             self.clean_exit()
@@ -262,6 +263,18 @@ class Drone:
         # send command to vehicle
         self.vehicle.send_mavlink(msg)
 
+    def set_attitude_target(self,roll,pitch,yaw):
+        array = [1,0,0,0]
+        msg = self.vehicle.message_factory.set_attitude_target_encode(
+                0, #time_boot_ms (not used)
+                0, 0, #target system, target component
+                0b00000000,
+                array, # Quaternion set for no rotation
+                roll,pitch,yaw, # roll,pitch,yaw rates
+                1)
+        self.vehicle.send_mavlink(msg)
+                
+
     def clean_exit(self):
          self.vehicle.mode = VehicleMode("LAND")
          time.sleep(5)
@@ -326,7 +339,7 @@ class Drone:
                 num_waypoints = num_waypoints + 1
             return num_waypoints
 
-    def kill(self):
+    def kill(self,bf):
         bus = SMBus(1)
         range_sensor = LidarLiteV3(bus)
         range_sensor.begin(0,0x62)
@@ -335,10 +348,21 @@ class Drone:
         if dest < 160:
             print "Killing"
             laser = Laser()
-            laser.trigger(.45)
+            laser.trigger(1)
             time.sleep(2) #MAKE SURE THE switch_off gets called!! either by timeout or manually calling switch_off()
             print("Laser test done")
-        bus.close()
+            bus.close()
+            time.sleep(2)
+            im, balloon_list = bf.find_balloons()
+            if len(balloon_list)>0:
+                return False
+            return True
+        return False
+            #time.sleep(.33)
+            #return True
+        #bus.close()
+        #return False
+        #time.sleep(10)
 
     def init_checks(self):
         print "Basic pre-arm checks"
@@ -393,9 +417,174 @@ class Drone:
                 time.sleep(1)
                 rotated_angle=rotated_angle+delta_angle
         self.land()
-            
-    def run(self):
-        self.take_off(5)
+
+    def update_vector(self,bf): 
+        for i in range(60):
+            im, balloon_list = bf.find_balloons()
+            if len(balloon_list)>0:
+                # if multiple, find one most likely to be true.
+                if len(balloon_list) == 1:
+                    true_balloon = balloon_list[0]
+                else:
+                    true_balloon = bf.pick_best_balloon(balloon_list)
+                # find the vector to that balloon
+                tvec = bf.find_vector(true_balloon)
+                print "====Vector==================="
+                print tvec
+                print "============================="
+                #self.vehicle.mode = VehicleMode("GUIDED")
+                time.sleep(2)
+                print "Flying to way point"
+                x = tvec[2] * .0254
+                y = tvec[0] * .0254
+                z = tvec[1] * .0254
+                #self.goto_position_target_local_ned(x,y,z)
+                #time.sleep(10)
+                vec = [x,y,z]
+                rotated_angle=0
+                return vec
+            time.sleep(.033)
+
+
+    def rotate_and_check_for_balloon(self,n,bf):
+        if n == 0:
+            return
+        self.vehicle.mode = VehicleMode("AUTO")
+        time.sleep(2)
+        print "Moving to North"
+        self.condition_yaw(0,False)
+        time.sleep(5)
+        detla_deg = 360/n
+        print "detla is: {}".format(detla_deg)
+        time.sleep(1)
+        for i in range(n):
+            pos = i*detla_deg
+            print "Moiving to {}".format(pos)
+            self.condition_yaw(pos,False)
+            while True:
+                angle = self.vehicle.attitude.yaw*57.2958
+                if(angle < 0):
+                    angle = 360 + angle
+                print "angle is: {}".format(angle)
+                if pos + 1.5 > angle and pos -1.5 < angle:
+                    time.sleep(2)
+                    if pos + 1.5 > angle and pos -1.5 < angle:
+                        time.sleep(2)
+                        break
+                time.sleep(1)
+            time.sleep(1)
+            print "Checking for Balloon"
+            for i in range(60):
+                im, balloon_list = bf.find_balloons()
+                if len(balloon_list)>0:
+                    # if multiple, find one most likely to be true.
+                    if len(balloon_list) == 1:
+                        true_balloon = balloon_list[0]
+                    else:
+                        true_balloon = bf.pick_best_balloon(balloon_list)
+                    # find the vector to that balloon
+                    tvec = bf.find_vector(true_balloon)
+                    print "====Vector==================="
+                    print tvec
+                    print "============================="
+                    self.vehicle.mode = VehicleMode("GUIDED")
+                    time.sleep(2)
+                    print "Flying to way point"
+                    x = tvec[2] * .0254
+                    y = tvec[0] * .0254
+                    z = tvec[1] * .0254
+                    #self.goto_position_target_local_ned(x,y,z)
+                    #time.sleep(10)
+                    vec = [x,y,z]
+                    rotated_angle=0
+                    return vec
+                time.sleep(.033)
+        print "Done with rotate"
+        time.sleep(1)
+   
+
+    def test_check_center(self,bf):
+        #bf = BalloonFinder()
+        cout = 0
+        while cout < 5: 
+            print "Checking for Balloon"
+            center_count = 0
+            for i in range(30):
+                im, balloon_list = bf.find_balloons()
+                if len(balloon_list)>0:
+                    # if multiple, find one most likely to be true.
+                    if len(balloon_list) == 1:
+                        true_balloon = balloon_list[0]
+                    else:
+                        true_balloon = bf.pick_best_balloon(balloon_list)
+                    # find the vector to that balloon
+                    tvec = bf.find_vector(true_balloon)
+                    print "====Vector==================="
+                    print tvec
+                    print "============================="
+                    x = tvec[2] * .0254
+                    y = tvec[0] * .0254
+                    z = tvec[1] * .0254
+                    print "x: {},y: {},z {}".format(x,y,z)
+                    is_center = self.check_center(y,z)
+                    print "ballon is the Center: {}".format(is_center)
+                    if(is_center):
+                        center_count = center_count + 1
+                time.sleep(.033)
+            count = count + 1
+            if center_count > 15:
+                return True
+        return False
+
+    
+
+    def check_center(self,x,y):
+        dst = math.sqrt(x*x+y*y)
+        if dst < .1:
+            return True
+        else:
+            return False
+
+    def run(self):             ### This it is it ###
+        bf = BalloonFinder()
+        filename = "waypoints.txt"
+        #num_waypoints = self.read_waypoints(filename)
+        current_waypoint = 0
+        self.take_off(6)
+        time.sleep(2)
+        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,6)
+        print "Home set as: {}".format(home_location)
+        #time.sleep(3) 
+        self.fly_to_waypoint(self.waypoints[current_waypoint])
+        self.vehicle.mode = VehicleMode("AUTO")
+        time.sleep(2)
+        vec = rotate_and_check_for_balloon(10,bf)
+        self.vehicle.mode = VehicleMode("GUIDED")
+        time.sleep(2)
+        killed = False
+        while not killed:
+            start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
+            self.goto_position_target_local_ned(0.8*vec[0],vec[1],vec[2])
+            distance = math.sqrt((0.8*vec[0]) * (0.8*vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
+            distance_traveled = 0
+            while distance > distance_traveled
+                current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
+                distance_traveled = self.get_distance_metres(start_position,current_waypoint)
+                time.sleep(1)
+            centered = self.test_check_center(bf)
+            if centered == True:
+                killed = self.kill(bf)
+            if not killed:
+                vec = self.update_vector(bf)
+                    
+
+
+
+    def run20(self):
+        bf = BalloonFinder()
+        self.take_off(6)
+        self.rotate_and_check_for_balloon(4,bf)
+        self.land()
 
     def run12(self):
         print "Testing Laser"
@@ -532,6 +721,55 @@ class Drone:
         #while True:
             #print self.vehicle.location.global_relative_frame.alt
             #time.sleep(.1)
+
+    def take_off_init(self):
+        """
+        Arms vehicle and fly to aTargetAltitude.
+        """
+
+        print "Basic pre-arm checks"
+        # Don't try to arm until autopilot is ready
+        while not self.vehicle.is_armable:
+            print " Waiting for vehicle to initialise..."
+            time.sleep(1)
+
+        print "Arming motors"
+        # Copter should arm in GUIDED mode
+        self.vehicle.mode    = VehicleMode("GUIDED")
+        self.vehicle.armed   = True
+
+        # Confirm vehicle armed before attempting to take off
+        while not self.vehicle.armed:
+            print " Waiting for arming..."
+            time.sleep(1)
+
+        print "Taking off!"
+        self.vehicle.simple_takeoff(altitude) # Take off to target altitude
+
+
+    def run_state(self):
+        state = "TAKEOFF"
+
+
+
+    def take_off_run(self):
+        print " Altitude: ", self.vehicle.location.global_relative_frame.alt
+        #Break and return from function just below target altitude.
+        if self.vehicle.location.global_relative_frame.alt>=altitude*0.95:
+            print "Reached target altitude"
+
+
+    def run_init(self,state):
+        if(state == "TAKEOFF"):
+            self.take_off_init(6)
+
+
+
+
+    def run_loop(self,state):
+        if(state == "TAKEOFF"):
+            self.take_off_run()
+
 
 
 
