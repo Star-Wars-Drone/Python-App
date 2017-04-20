@@ -204,7 +204,7 @@ class BalloonFinder(object):
         """recieves list of contours it suspects to be balloons and determines which one is
         most likely to be the true balloon."""
 
-        b = max(balloon_list, key=cv2contourArea)
+        b = max(balloon_list, key=cv2.contourArea)
         
         return b
         

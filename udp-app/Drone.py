@@ -344,7 +344,7 @@ class Drone:
         range_sensor = LidarLiteV3(bus)
         range_sensor.begin(0,0x62)
         dest = range_sensor.get_distance(False,0x62)
-        print "Distance: {}".format(dest)
+        print "#########################Distance: {}############################".format(dest)
         if dest < 160:
             print "Killing"
             laser = Laser()
@@ -352,7 +352,7 @@ class Drone:
             time.sleep(2) #MAKE SURE THE switch_off gets called!! either by timeout or manually calling switch_off()
             print("Laser test done")
             bus.close()
-            time.sleep(2)
+            time.sleep(5)
             im, balloon_list = bf.find_balloons()
             if len(balloon_list)>0:
                 return False
@@ -505,8 +505,8 @@ class Drone:
 
     def test_check_center(self,bf):
         #bf = BalloonFinder()
-        cout = 0
-        while cout < 5: 
+        count = 0
+        while count < 5: 
             print "Checking for Balloon"
             center_count = 0
             for i in range(30):
@@ -530,9 +530,11 @@ class Drone:
                     print "ballon is the Center: {}".format(is_center)
                     if(is_center):
                         center_count = center_count + 1
+                        print "center_count: {}".format(center_count)
                 time.sleep(.033)
             count = count + 1
             if center_count > 15:
+                print "######################Balloon is centered#########################"
                 return True
         return False
 
@@ -548,7 +550,7 @@ class Drone:
     def run(self):             ### This it is it ###
         bf = BalloonFinder()
         filename = "waypoints.txt"
-        #num_waypoints = self.read_waypoints(filename)
+        num_waypoints = self.read_waypoints(filename)
         current_waypoint = 0
         self.take_off(6)
         time.sleep(2)
@@ -558,16 +560,16 @@ class Drone:
         self.fly_to_waypoint(self.waypoints[current_waypoint])
         self.vehicle.mode = VehicleMode("AUTO")
         time.sleep(2)
-        vec = rotate_and_check_for_balloon(10,bf)
+        vec = self.rotate_and_check_for_balloon(10,bf)
         self.vehicle.mode = VehicleMode("GUIDED")
         time.sleep(2)
         killed = False
         while not killed:
             start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-            self.goto_position_target_local_ned(0.8*vec[0],vec[1],vec[2])
-            distance = math.sqrt((0.8*vec[0]) * (0.8*vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
+            self.goto_position_target_local_ned(0.95*vec[0],vec[1],vec[2])
+            distance = math.sqrt((0.95*vec[0]) * (0.95*vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
             distance_traveled = 0
-            while distance > distance_traveled
+            while distance > distance_traveled or distance < 0.5:
                 current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
                 distance_traveled = self.get_distance_metres(start_position,current_waypoint)
                 time.sleep(1)
@@ -576,6 +578,9 @@ class Drone:
                 killed = self.kill(bf)
             if not killed:
                 vec = self.update_vector(bf)
+        self.fly_to_waypoint(home_location)
+        time.sleep(1)
+        self.land()
                     
 
 
