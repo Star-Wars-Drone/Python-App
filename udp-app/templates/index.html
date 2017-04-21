@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>Video Streaming Demonstration</title>
+  </head>
+  <body>
+    <h1>Video Streaming Demonstration</h1>
+    <table width="100%">
+        <tr valign="top">
+            <td width="30%">
+                <img id="bg" src="{{ url_for('video_feed') }}">
+                <img id="bg1" src="{{ url_for('video_feed') }}">
+            </td>
+            <td width="70%">
+                hue min<br />
+                <input id="hue_min" type="range" min="0" max="50" value="25" z-index="1" /><br />
+                satration min<br />
+                <input type="range" min="0" max="50" value="25" z-index="1" /><br />
+                value min<br />
+                <input type="range" min="0" max="50" value="25" z-index="1" /><br />
+                hue max<br />
+                <input type="range" min="0" max="50" value="25" z-index="1" /><br />
+                satration max<br />
+                <input type="range" min="0" max="50" value="25" z-index="1" /><br />
+                value min<br />
+                <input type="range" min="0" max="50" value="25" z-index="2" />
+            </td>
+        </tr>
+    </table>
+  </body>
+</html>
