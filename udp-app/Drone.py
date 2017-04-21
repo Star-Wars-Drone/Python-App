@@ -443,6 +443,8 @@ class Drone:
                 vec = [x,y,z]
                 rotated_angle=0
                 return vec
+            else:
+                return []
             time.sleep(.033)
 
 
@@ -466,9 +468,9 @@ class Drone:
                 if(angle < 0):
                     angle = 360 + angle
                 print "angle is: {}".format(angle)
-                if pos + 1.5 > angle and pos -1.5 < angle:
+                if pos + 5 > angle and pos -5 < angle:
                     time.sleep(2)
-                    if pos + 1.5 > angle and pos -1.5 < angle:
+                    if pos + 5 > angle and pos -5 < angle:
                         time.sleep(2)
                         break
                 time.sleep(1)
@@ -501,6 +503,7 @@ class Drone:
                 time.sleep(.033)
         print "Done with rotate"
         time.sleep(1)
+        return []
    
 
     def test_check_center(self,bf):
@@ -530,11 +533,11 @@ class Drone:
                     print "ballon is the Center: {}".format(is_center)
                     if(is_center):
                         center_count = center_count + 1
-                        print "center_count: {}".format(center_count)
+                        print "center_count: {}".format(center_count)        
                 time.sleep(.033)
             count = count + 1
-            if center_count > 15:
-                print "######################Balloon is centered#########################"
+            if center_count > 5:
+                print "###################### Balloon is centered #########################"
                 return True
         return False
 
@@ -542,12 +545,12 @@ class Drone:
 
     def check_center(self,x,y):
         dst = math.sqrt(x*x+y*y)
-        if dst < .1:
+        if dst < .4:
             return True
         else:
             return False
 
-    def run(self):             ### This it is it ###
+    def run(self):             ### This is it ###
         bf = BalloonFinder()
         filename = "waypoints.txt"
         num_waypoints = self.read_waypoints(filename)
@@ -560,14 +563,19 @@ class Drone:
         self.fly_to_waypoint(self.waypoints[current_waypoint])
         self.vehicle.mode = VehicleMode("AUTO")
         time.sleep(2)
-        vec = self.rotate_and_check_for_balloon(10,bf)
+        vec = self.rotate_and_check_for_balloon(15,bf)
         self.vehicle.mode = VehicleMode("GUIDED")
         time.sleep(2)
+        if vec == []:
+            self.fly_to_waypoint(home_location)
+            print "############# Didn't find balloon!!! Flying Home. ###############"
+            time.sleep(2)
+            self.land()
         killed = False
         while not killed:
             start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-            self.goto_position_target_local_ned(0.95*vec[0],vec[1],vec[2])
-            distance = math.sqrt((0.95*vec[0]) * (0.95*vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
+            self.goto_position_target_local_ned(0.85*vec[0],vec[1],vec[2])
+            distance = math.sqrt((0.85*vec[0]) * (0.85*vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
             distance_traveled = 0
             while distance > distance_traveled or distance < 0.5:
                 current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
@@ -578,6 +586,10 @@ class Drone:
                 killed = self.kill(bf)
             if not killed:
                 vec = self.update_vector(bf)
+                if vec == []:
+                    self.goto_position_target_local_ned(-1,0,0)
+                    print "Can't see balloon. Backing up..."
+                    time.sleep(5)
         self.fly_to_waypoint(home_location)
         time.sleep(1)
         self.land()
