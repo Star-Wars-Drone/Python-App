@@ -24,12 +24,12 @@ class BalloonFinder(object):
         self.cam = cv2.VideoCapture(0)
         self.im_cnt =0;
         self.vid_cnt = 0;
-        #self.low_red = np.array([0, 100, 100])
-        #self.upper_red = np.array([255, 255, 255])
+        self.low_red = np.array([0, 100, 100])
+        self.upper_red = np.array([255, 255, 255])
         
         # thresh from drone cam
-        self.low_red = np.array([121,0,149])
-        self.upper_red = np.array([255,255,255])
+        #self.low_red = np.array([124,106,163])
+        #self.upper_red = np.array([194,255,255])
 
 
         #TODO(Ahmed): Replace with actual valuesi.
@@ -105,7 +105,7 @@ class BalloonFinder(object):
         approx = cv2.approxPolyDP(contour, 0.02*peri, True)
 
         # expect very large # of edges
-        if len(approx) > 5:
+        if len(approx) > 15:
             return True
         return False    
 
@@ -153,7 +153,7 @@ class BalloonFinder(object):
         rnd = self.is_round(contour)
         ep = self.is_elliptical(contour)
         
-        return (ep and sld and rnd)
+        return (ep and rnd)
 
 
     def filter_and_mask(self, frame):
@@ -173,18 +173,42 @@ class BalloonFinder(object):
 
         mask = self.filter_and_mask(im)
         
+        cv2.imshow('mask', mask)
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         balloons = []
         
 
+ 
+
         #TODO(Ahmed): figure out how to make this useful.
         for c in cnts:
+
             #peri = cv2.arcLength(c, True)
             #approx = cv2.approxPolyDP(c, 0.02*peri, True)
             if self.is_balloon(c):
                 #cv2.drawContours(image, [c], 0, (255,0,0), 8)
                 balloons.append(c) 
         return im, balloons
+
+    def get_lower_half(self, cnt):
+        """ removes the upper half of a contour.
+            Midpoint calculated based on bounding ellipse
+
+            Based on this:
+            http://stackoverflow.com/questions/27208532/is-there-a-way-to-remove-points-from-a-contour-outside-a-given-circle-in-python
+        """
+
+        (rx,ry), (MA,ma), angle = cv2.fitEllipse(cnt)
+
+        # This is how you extract points from contour
+        #x = p[0][0]
+        #y = p[0][1]
+        #recall that 0,0 is top left.
+        raw_cnt = np.squeeze(cnt)
+        mask = raw_cnt[:,1] < ry
+
+        low_half = raw_cnt[mask,:]
+        return low_half
 
     def extreme_points(self, cnt):
         left = tuple(cnt[cnt[:,:,0].argmin()][0])
@@ -244,17 +268,19 @@ def main():
         # find full list of selected balloons.
         # and an image with them drawn on.
         im, balloon_list = bf.find_balloons()
-        
+        cv2.drawContours(im, balloon_list, -1, (255,0,0), 8)
+
+
+        cv2.imshow('cnts', im)
         for b in balloon_list:
             # find the vector to that balloon
             tvec = bf.find_vector(b)
-
+            low_h = bf.get_lower_half(b)
+            cv2.drawContours(im, [low_h], -1, (0,0,255),8)
             # calculate waypoint to balloon
-
-
                 
             print "====Vector==================="
-            print tvec
+            print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
             print "============================="
             ###################################################
 
