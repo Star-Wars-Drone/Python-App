@@ -550,7 +550,58 @@ class Drone:
         else:
             return False
 
-    def run(self):             ### This is it ###
+    def run(self):
+        bf = BalloonFinder()
+        timeout = 0
+        filename = "waypoints.txt"
+        num_waypoints = self.read_waypoints(filename)
+        current_waypoint = 0
+        self.take_off(6)
+        time.sleep(2)
+        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,6)
+        print "Home set as: {}".format(home_location)
+        #time.sleep(3) 
+        self.fly_to_waypoint(self.waypoints[current_waypoint])
+        self.vehicle.mode = VehicleMode("AUTO")
+        time.sleep(4)
+        print "Rotating..."
+        vec = self.rotate_and_check_for_balloon(15,bf)
+        self.vehicle.mode = VehicleMode("GUIDED")
+        time.sleep(2)
+        if vec == []:
+            self.fly_to_waypoint(home_location)
+            print "############# Didn't find balloon!!! Flying Home. ###############"
+            time.sleep(2)
+            self.land()
+        killed = False
+        while not killed:
+            timeout = 0
+            start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
+            self.goto_position_target_local_ned(vec[0],vec[1],vec[2])
+            distance = math.sqrt((vec[0]) * (vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
+            distance_traveled = 0
+            while distance > distance_traveled or distance < 0.5:
+                current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
+                distance_traveled = self.get_distance_metres(start_position,current_waypoint)
+                time.sleep(1)
+            vec = self.update_vector(bf)
+            while vec == []:
+                self.goto_position_target_local_ned(-1,0,0)
+                print "Can't see balloon. Backing up...."
+                time.sleep(5)
+                vec = self.update_vector(bf)
+                timeout = timeout + 1
+                if timeout >= 10:
+                    break
+            if timeout >= 10:
+                break
+        self.fly_to_waypoint(home_location)
+        time.sleep(1)
+        self.land()
+
+
+
+    def run15(self):             ### This is it ###
         bf = BalloonFinder()
         filename = "waypoints.txt"
         num_waypoints = self.read_waypoints(filename)
@@ -562,7 +613,8 @@ class Drone:
         #time.sleep(3) 
         self.fly_to_waypoint(self.waypoints[current_waypoint])
         self.vehicle.mode = VehicleMode("AUTO")
-        time.sleep(2)
+        time.sleep(4)
+        print "Rotating..."
         vec = self.rotate_and_check_for_balloon(15,bf)
         self.vehicle.mode = VehicleMode("GUIDED")
         time.sleep(2)
