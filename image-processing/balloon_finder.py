@@ -24,12 +24,12 @@ class BalloonFinder(object):
         self.cam = cv2.VideoCapture(0)
         self.im_cnt =0;
         self.vid_cnt = 0;
-        self.low_red = np.array([0, 100, 100])
-        self.upper_red = np.array([255, 255, 255])
+        #self.low_red = np.array([0, 100, 100])
+        #self.upper_red = np.array([255, 255, 255])
         
         # thresh from drone cam
-        #self.low_red = np.array([124,106,163])
-        #self.upper_red = np.array([194,255,255])
+        self.low_red = np.array([120,100,160])
+        self.upper_red = np.array([198,255,255])
 
 
         #TODO(Ahmed): Replace with actual valuesi.
@@ -105,7 +105,7 @@ class BalloonFinder(object):
         approx = cv2.approxPolyDP(contour, 0.02*peri, True)
 
         # expect very large # of edges
-        if len(approx) > 15:
+        if len(approx) > 5:
             return True
         return False    
 
@@ -157,8 +157,10 @@ class BalloonFinder(object):
 
 
     def filter_and_mask(self, frame):
-        #blur = cv2.GaussianBlur(frame,(0,0),3)
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    	bw = cv2.balanceWhite(frame, cv2.WHITE_BALANCE_SIMPLE)
+        blur = cv2.GaussianBlur(bw,(0,0),3)
+        hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, self.low_red, self.upper_red)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
