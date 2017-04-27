@@ -21,15 +21,23 @@ import math
 class BalloonFinder(object):
 
     def __init__(self):
-        self.cam = cv2.VideoCapture(0)
+        self.cam = cv2.VideoCapture(1)
         self.im_cnt =0;
         self.vid_cnt = 0;
         #self.low_red = np.array([0, 100, 100])
         #self.upper_red = np.array([255, 255, 255])
         
         # thresh from drone cam
-        self.low_red = np.array([143,114,155])
-        self.upper_red = np.array([255,255,255])
+        #self.low_red = np.array([143,114,155])
+        #self.upper_red = np.array([255,255,255])
+
+        # New camera
+        #self.low_red = np.array([161,73,51])
+        #self.upper_red = np.array([193,255,255])
+
+        # Best camera
+        self.low_red = np.array([146,47,228])
+        self.upper_red = np.array([194,255,255])
 
 
         #TODO(Ahmed): Replace with actual valuesi.
@@ -150,14 +158,18 @@ class BalloonFinder(object):
 
     def is_balloon(self, contour):
         
+        if len(contour) < 5:
+        	return False
         sld = self.is_solid(contour)
-        rnd = self.is_round(contour)
-        ep = self.is_elliptical(contour)
+        #rnd = self.is_round(contour)
+        #ep = self.is_elliptical(contour)
         
         return (sld)
 
     def is_definitely_balloon(self, contour):
     	""" Also filters out red objects"""
+    	if len(contour < 5):
+    		return False
         sld = self.is_solid(contour)
         rnd = self.is_round(contour)
         ep = self.is_elliptical(contour)  
@@ -239,9 +251,27 @@ class BalloonFinder(object):
         """recieves list of contours it suspects to be balloons and determines which one is
         most likely to be the true balloon."""
 
-        b = max(balloon_list, key=cv2contourArea)
-        
-        return b
+        # b = max(balloon_list, key=cv2contourArea)
+        # find balloon closest to ellipse ratio of 1.5
+        # We thought it would be 1, but idk.
+        best_ratio = 100
+        best_ballon = None
+        for b in balloon_list:
+	        (x,y), (MA,ma), angle = cv2.fitEllipse(b)
+	        ellipse = cv2.fitEllipse(b)
+
+	        ell_area = 3.14159264*(MA/2)*(ma/2)
+
+	        eps = 0.1*cv2.arcLength(b,True)
+	        aprx = cv2.approxPolyDP(b, eps, True)
+	        area = cv2.contourArea(aprx)
+
+	        if area > 0:  
+	            ratio = float(ell_area)/float(area)
+	            if (ratio-1.5) < best_ratio:
+        			best_ratio = ratio-1.5
+        			best_ballon = b
+        return best_ballon
         
     
     def find_waypoint(self,current_gps_location,bloon_cnt):
@@ -266,7 +296,12 @@ class BalloonFinder(object):
         waypoint=[new_lat,new_lon,new_altitude]
         return waypoint
 
-
+#def circle_contour(im, cnt):
+#   (x,y), r = cv2.minEnclosingCircle(cnt)
+#    center = (int(x), int(y))
+ #   rad = int(r)
+#    cv2.circle(im, center, rad,(0,255,255),8)	
+#    return im
 
 def main():
     bf = BalloonFinder()
@@ -293,12 +328,17 @@ def main():
                 rad = int(r)
                 cv2.circle(im, center, rad,(0,255,0),2)
 
-
+        bb = bf.pick_best_balloon(balloon_list)
+        if bb != None:
+	        (x,y), r = cv2.minEnclosingCircle(bb)
+	        center = (int(x), int(y))
+	        rad = int(r)
+	        cv2.circle(im, center, rad,(0,0,255),8)
         cv2.imshow('ball', im)
-            #print "====Vector==================="
-            #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
-           # print "============================="
-            ###################################################
+        #print "====Vector==================="
+        #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
+        #print "============================="
+        ###################################################
 
 
         #for b in bloons:
