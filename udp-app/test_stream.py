@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from flask import Flask, render_template, Response
 import cv2
-from balloon_video import BalloonFinder
+from balloon_finder import BalloonFinder
 app = Flask(__name__)
 
 @app.route('/')
@@ -45,7 +45,7 @@ def gen():
         ###################################################
 
 
-        cv2.imshow('balloons', im)
+        #cv2.imshow('balloons', im)
         #for b in bloons:
         #    tvec = bf.find_vector(b)
         #    #tvec = bf.find_waypoint(gps_cord,b)

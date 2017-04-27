@@ -28,8 +28,16 @@ class BalloonFinder(object):
         #self.upper_red = np.array([255, 255, 255])
         
         # thresh from drone cam
-        self.low_red = np.array([143,0,238])
-        self.upper_red = np.array([255,255,255])
+        #self.low_red = np.array([143,114,155])
+        #self.upper_red = np.array([255,255,255])
+
+        # New camera
+        #self.low_red = np.array([161,73,51])
+        #self.upper_red = np.array([193,255,255])
+
+        # Best camera
+        self.low_red = np.array([146,47,228])
+        self.upper_red = np.array([194,255,255])
 
 
         #TODO(Ahmed): Replace with actual valuesi.
@@ -89,7 +97,8 @@ class BalloonFinder(object):
 
         area = cv2.contourArea(contour)
         hullArea = cv2.contourArea(cv2.convexHull(contour))
-        if hullArea > 0:
+       	# thresh to avoid specs and 0-div
+        if hullArea > 100:
             solidity = area / float(hullArea)
         else:
             return False
@@ -149,16 +158,30 @@ class BalloonFinder(object):
 
     def is_balloon(self, contour):
         
+        if len(contour) < 5:
+        	return False
+        sld = self.is_solid(contour)
+        #rnd = self.is_round(contour)
+        #ep = self.is_elliptical(contour)
+        
+        return (sld)
+
+    def is_definitely_balloon(self, contour):
+    	""" Also filters out red objects"""
+    	if len(contour < 5):
+    		return False
         sld = self.is_solid(contour)
         rnd = self.is_round(contour)
-        ep = self.is_elliptical(contour)
-        
-        return (ep and sld and rnd)
+        ep = self.is_elliptical(contour)  
+        return (ep and rnd and ep)
+
 
 
     def filter_and_mask(self, frame):
-        #blur = cv2.GaussianBlur(frame,(0,0),3)
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    	#bw = cv2.balanceWhite(frame, cv2.WHITE_BALANCE_SIMPLE)
+        blur = cv2.GaussianBlur(frame,(0,0),3)
+        hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, self.low_red, self.upper_red)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
@@ -173,18 +196,42 @@ class BalloonFinder(object):
 
         mask = self.filter_and_mask(im)
         
+        #cv2.imshow('mask', mask)
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         balloons = []
         
 
+ 
+
         #TODO(Ahmed): figure out how to make this useful.
         for c in cnts:
+
             #peri = cv2.arcLength(c, True)
             #approx = cv2.approxPolyDP(c, 0.02*peri, True)
             if self.is_balloon(c):
                 #cv2.drawContours(image, [c], 0, (255,0,0), 8)
                 balloons.append(c) 
         return im, balloons
+
+    def get_lower_half(self, cnt):
+        """ removes the upper half of a contour.
+            Midpoint calculated based on bounding ellipse
+
+            Based on this:
+            http://stackoverflow.com/questions/27208532/is-there-a-way-to-remove-points-from-a-contour-outside-a-given-circle-in-python
+        """
+
+        (rx,ry), (MA,ma), angle = cv2.fitEllipse(cnt)
+
+        # This is how you extract points from contour
+        #x = p[0][0]
+        #y = p[0][1]
+        #recall that 0,0 is top left.
+        raw_cnt = np.squeeze(cnt)
+        mask = raw_cnt[:,1] < ry
+
+        low_half = raw_cnt[mask,:]
+        return low_half
 
     def extreme_points(self, cnt):
         left = tuple(cnt[cnt[:,:,0].argmin()][0])
@@ -204,9 +251,27 @@ class BalloonFinder(object):
         """recieves list of contours it suspects to be balloons and determines which one is
         most likely to be the true balloon."""
 
-        b = max(balloon_list, key=cv2.contourArea)
-        
-        return b
+        # b = max(balloon_list, key=cv2contourArea)
+        # find balloon closest to ellipse ratio of 1.5
+        # We thought it would be 1, but idk.
+        best_ratio = 100
+        best_ballon = None
+        for b in balloon_list:
+	        (x,y), (MA,ma), angle = cv2.fitEllipse(b)
+	        ellipse = cv2.fitEllipse(b)
+
+	        ell_area = 3.14159264*(MA/2)*(ma/2)
+
+	        eps = 0.1*cv2.arcLength(b,True)
+	        aprx = cv2.approxPolyDP(b, eps, True)
+	        area = cv2.contourArea(aprx)
+
+	        if area > 0:  
+	            ratio = float(ell_area)/float(area)
+	            if (ratio-1.5) < best_ratio:
+        			best_ratio = ratio-1.5
+        			best_ballon = b
+        return best_ballon
         
     
     def find_waypoint(self,current_gps_location,bloon_cnt):
@@ -231,32 +296,46 @@ class BalloonFinder(object):
         waypoint=[new_lat,new_lon,new_altitude]
         return waypoint
 
-
+#def circle_contour(im, cnt):
+#   (x,y), r = cv2.minEnclosingCircle(cnt)
+#    center = (int(x), int(y))
+ #   rad = int(r)
+#    cv2.circle(im, center, rad,(0,255,255),8)	
+#    return im
 
 def main():
     bf = BalloonFinder()
     while True:
         ###############################################
         # General usage example:
-
-        # Dummy value for laptp testing.
-        gps_cord=[0.624371939852,-1.37329479882,30]   
         # find full list of selected balloons.
         # and an image with them drawn on.
         im, balloon_list = bf.find_balloons()
-        
+        cv2.drawContours(im, balloon_list, -1, (255,0,0), 8)
         for b in balloon_list:
             # find the vector to that balloon
             tvec = bf.find_vector(b)
-
+            #low_h = bf.get_lower_half(b)
+            #cv2.drawContours(im, [low_h], -1, (0,0,255),8)
             # calculate waypoint to balloon
 
+            if bf.is_definitely_balloon(b):
+                (x,y), r = cv2.minEnclosingCircle(b)
+                center = (int(x), int(y))
+                rad = int(r)
+                cv2.circle(im, center, rad,(0,255,0),2)
 
-                
-            print "====Vector==================="
-            print tvec
-            print "============================="
-            ###################################################
+        bb = bf.pick_best_balloon(balloon_list)
+        if bb != None:
+	        (x,y), r = cv2.minEnclosingCircle(bb)
+	        center = (int(x), int(y))
+	        rad = int(r)
+	        cv2.circle(im, center, rad,(0,0,255),8)
+        cv2.imshow('ball', im)
+        #print "====Vector==================="
+        #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
+        #print "============================="
+        ###################################################
 
 
         #for b in bloons:
