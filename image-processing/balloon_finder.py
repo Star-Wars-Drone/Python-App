@@ -21,7 +21,7 @@ import math
 class BalloonFinder(object):
 
     def __init__(self):
-        self.cam = cv2.VideoCapture(1)
+        self.cam = cv2.VideoCapture(0)
         self.im_cnt =0;
         self.vid_cnt = 0;
         #self.low_red = np.array([0, 100, 100])
