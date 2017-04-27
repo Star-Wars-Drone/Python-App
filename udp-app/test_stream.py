@@ -3,9 +3,6 @@ from flask import Flask, render_template, Response
 import cv2
 from balloon_video import BalloonFinder
 app = Flask(__name__)
-#vc = cv2.VideoCapture(0)
-bf = BalloonFinder()
-im, balloon_list = bf.find_balloons()
 
 @app.route('/')
 def index():

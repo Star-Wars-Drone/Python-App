@@ -308,9 +308,6 @@ def main():
     while True:
         ###############################################
         # General usage example:
-
-        # Dummy value for laptp testing.
-        gps_cord=[0.624371939852,-1.37329479882,30]   
         # find full list of selected balloons.
         # and an image with them drawn on.
         im, balloon_list = bf.find_balloons()
