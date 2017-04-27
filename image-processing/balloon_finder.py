@@ -28,8 +28,8 @@ class BalloonFinder(object):
         #self.upper_red = np.array([255, 255, 255])
         
         # thresh from drone cam
-        self.low_red = np.array([120,100,160])
-        self.upper_red = np.array([198,255,255])
+        self.low_red = np.array([143,114,155])
+        self.upper_red = np.array([255,255,255])
 
 
         #TODO(Ahmed): Replace with actual valuesi.
