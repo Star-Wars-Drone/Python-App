@@ -480,10 +480,7 @@ class Drone:
                 im, balloon_list = bf.find_balloons()
                 if len(balloon_list)>0:
                     # if multiple, find one most likely to be true.
-                    if len(balloon_list) == 1:
-                        true_balloon = balloon_list[0]
-                    else:
-                        true_balloon = bf.pick_best_balloon(balloon_list)
+                    true_balloon = bf.pick_best_balloon(balloon_list)
                     # find the vector to that balloon
                     tvec = bf.find_vector(true_balloon)
                     print "====Vector==================="
