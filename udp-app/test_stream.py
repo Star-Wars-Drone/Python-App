@@ -15,25 +15,30 @@ def index():
 
 def gen():
     """Video streaming generator function."""
+
+bf = BalloonFinder()        
     while True:
         
-        ret, im = bf.cam.read()
-        real_im = im
-        mask = bf.filter_and_mask(im)
-        
-        cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-        balloons = []
-        for c in cnts:
-            #peri = cv2.arcLength(c, True)
-            #approx = cv2.approxPolyDP(c, 0.02*peri, True)
-            if bf.is_balloon(c):
-                cv2.drawContours(im, [c], 0, (255,0,0), 7)
-                balloons.append(c) 
-            if bf.is_definitely_balloon(c):
-                (x,y), r = cv2.minEnclosingCircle(c)
+        # find all balloon contours
+        im, balloon_list = bf.find_balloons()
+        cv2.drawContours(im, balloon_list, -1, (255,0,0), 8)
+        for b in balloon_list:
+            # find the vector to that balloon
+            tvec = bf.find_vector(b)
+
+            if bf.is_definitely_balloon(b):
+                (x,y), r = cv2.minEnclosingCircle(b)
                 center = (int(x), int(y))
                 rad = int(r)
                 cv2.circle(im, center, rad,(0,255,0),2)
+
+        bb = bf.pick_best_balloon(balloon_list)
+        if bb != None:
+            (x,y), r = cv2.minEnclosingCircle(bb)
+            center = (int(x), int(y))
+            rad = int(r)
+            cv2.circle(im, center, rad,(0,0,255),8)
+        cv2.imshow('ball', im)
 
         cv2.imwrite('t.jpg', im)
         yield (b'--frame\r\n'
