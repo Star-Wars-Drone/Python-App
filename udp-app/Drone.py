@@ -589,6 +589,7 @@ class Drone:
                 if timeout >= 10:
                     break
             if timeout >= 10:
+                print "Can't find balloon. Flying home..."
                 break
         self.fly_to_waypoint(home_location)
         time.sleep(1)
