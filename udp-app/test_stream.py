@@ -16,15 +16,23 @@ def index():
 def gen():
     """Video streaming generator function."""
 
-bf = BalloonFinder()        
+    bf = BalloonFinder()
     while True:
-        
-        # find all balloon contours
+        ###############################################
+        # General usage example:
+
+        # Dummy value for laptp testing.
+        gps_cord=[0.624371939852,-1.37329479882,30]   
+        # find full list of selected balloons.
+        # and an image with them drawn on.
         im, balloon_list = bf.find_balloons()
         cv2.drawContours(im, balloon_list, -1, (255,0,0), 8)
         for b in balloon_list:
             # find the vector to that balloon
             tvec = bf.find_vector(b)
+            #low_h = bf.get_lower_half(b)
+            #cv2.drawContours(im, [low_h], -1, (0,0,255),8)
+            # calculate waypoint to balloon
 
             if bf.is_definitely_balloon(b):
                 (x,y), r = cv2.minEnclosingCircle(b)
@@ -38,8 +46,25 @@ bf = BalloonFinder()
             center = (int(x), int(y))
             rad = int(r)
             cv2.circle(im, center, rad,(0,0,255),8)
-        cv2.imshow('ball', im)
+        #cv2.imshow('ball', im)
+        #print "====Vector==================="
+        #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
+        #print "============================="
+        ###################################################
 
+
+        #for b in bloons:
+        #    tvec = bf.find_vector(b)
+        #    #tvec = bf.find_waypoint(gps_cord,b)
+        #    print tvec
+        #print "balloons: ", len(bloons)
+       # cv2.imshow('canny ablloons', cann_im)
+        
+       # cv2.imshow('canny', cann)
+
+        k = cv2.waitKey(5) & 0xFF
+        if k ==27:
+            break
         cv2.imwrite('t.jpg', im)
         yield (b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + open('t.jpg', 'rb').read() + b'\r\n')
