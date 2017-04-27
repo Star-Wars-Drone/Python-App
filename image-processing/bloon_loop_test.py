@@ -5,7 +5,6 @@ import numpy as np
 
 
 cam = cv2.VideoCapture(0)
-detector = cv2.SimpleBlobDetector()
 
 
 # out = cv2.VideoWriter('output.avi',fourcc, 20.0, (640,480))
@@ -159,23 +158,14 @@ while True:
 
     hsv = cv2.cvtColor(im, cv2.COLOR_BGR2HSV)
     #hsv = cv2.GaussianBlur(hsv,(0,0),3)
-    mask = cv2.inRange(hsv, low_red, upper_red)
-    mask = cv2.erode(mask, None, iterations=2)
-    mask = cv2.dilate(mask, None, iterations=2)
-
 
     #cv2.imshow('mask', mask)
-    cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+    cnts = cv2.findContours(hsv, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 
 
     cv2.drawContours(im, cnts, -1, (0,255,0), 3)
 
-    for c in cnts:
-        #peri = cv2.arcLength(c, True)
-        #approx = cv2.approxPolyDP(c, 0.02*peri, True)
-        if is_balloon(c):
-            cv2.drawContours(im, [c], 0, (255,0,0), 8)
-    #frame = cv2.bitwise_and(frame,frame,mask=mask)
+   #frame = cv2.bitwise_and(frame,frame,mask=mask)
     #gray = cv2.cvtColor(frame, cv2.COLOR_HSV2GRAY)
    
     #ret, thresh = cv2.threshold(gray, 127, 255, 0)
