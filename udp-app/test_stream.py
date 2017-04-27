@@ -18,8 +18,6 @@ def gen():
         ###############################################
         # General usage example:
 
-        # Dummy value for laptp testing.
-        gps_cord=[0.624371939852,-1.37329479882,30]   
         # find full list of selected balloons.
         # and an image with them drawn on.
         im, balloon_list = bf.find_balloons()
@@ -27,9 +25,6 @@ def gen():
         for b in balloon_list:
             # find the vector to that balloon
             tvec = bf.find_vector(b)
-            #low_h = bf.get_lower_half(b)
-            #cv2.drawContours(im, [low_h], -1, (0,0,255),8)
-            # calculate waypoint to balloon
 
             if bf.is_definitely_balloon(b):
                 (x,y), r = cv2.minEnclosingCircle(b)
@@ -50,6 +45,7 @@ def gen():
         ###################################################
 
 
+        cv2.imshow('balloons', im)
         #for b in bloons:
         #    tvec = bf.find_vector(b)
         #    #tvec = bf.find_waypoint(gps_cord,b)
