@@ -167,8 +167,8 @@ class BalloonFinder(object):
 
     def filter_and_mask(self, frame):
 
-    	bw = cv2.balanceWhite(frame, cv2.WHITE_BALANCE_SIMPLE)
-        blur = cv2.GaussianBlur(bw,(0,0),3)
+    	#bw = cv2.balanceWhite(frame, cv2.WHITE_BALANCE_SIMPLE)
+        blur = cv2.GaussianBlur(frame,(0,0),3)
         hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, self.low_red, self.upper_red)
         mask = cv2.erode(mask, None, iterations=2)
@@ -184,7 +184,7 @@ class BalloonFinder(object):
 
         mask = self.filter_and_mask(im)
         
-        cv2.imshow('mask', mask)
+        #cv2.imshow('mask', mask)
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         balloons = []
         
@@ -280,19 +280,24 @@ def main():
         # and an image with them drawn on.
         im, balloon_list = bf.find_balloons()
         cv2.drawContours(im, balloon_list, -1, (255,0,0), 8)
-
-
-        cv2.imshow('cnts', im)
         for b in balloon_list:
             # find the vector to that balloon
             tvec = bf.find_vector(b)
-            low_h = bf.get_lower_half(b)
-            cv2.drawContours(im, [low_h], -1, (0,0,255),8)
+            #low_h = bf.get_lower_half(b)
+            #cv2.drawContours(im, [low_h], -1, (0,0,255),8)
             # calculate waypoint to balloon
-                
-            print "====Vector==================="
-            print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
-            print "============================="
+
+            if bf.is_definitely_balloon(b):
+                (x,y), r = cv2.minEnclosingCircle(b)
+                center = (int(x), int(y))
+                rad = int(r)
+                cv2.circle(im, center, rad,(0,255,0),2)
+
+
+        cv2.imshow('ball', im)
+            #print "====Vector==================="
+            #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
+           # print "============================="
             ###################################################
 
 

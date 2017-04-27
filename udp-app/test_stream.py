@@ -27,9 +27,14 @@ def gen():
             #peri = cv2.arcLength(c, True)
             #approx = cv2.approxPolyDP(c, 0.02*peri, True)
             if bf.is_balloon(c):
-                cv2.drawContours(im, [c], 0, (255,0,0), 8)
-
+                cv2.drawContours(im, [c], 0, (255,0,0), 7)
                 balloons.append(c) 
+            if bf.is_definitely_balloon(c):
+                (x,y), r = cv2.minEnclosingCircle(c)
+                center = (int(x), int(y))
+                rad = int(r)
+                cv2.circle(im, center, rad,(0,255,0),2)
+
         cv2.imwrite('t.jpg', im)
         yield (b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + open('t.jpg', 'rb').read() + b'\r\n')
