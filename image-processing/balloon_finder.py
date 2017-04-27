@@ -89,7 +89,8 @@ class BalloonFinder(object):
 
         area = cv2.contourArea(contour)
         hullArea = cv2.contourArea(cv2.convexHull(contour))
-        if hullArea > 0:
+       	# thresh to avoid specs and 0-div
+        if hullArea > 100:
             solidity = area / float(hullArea)
         else:
             return False
@@ -153,7 +154,15 @@ class BalloonFinder(object):
         rnd = self.is_round(contour)
         ep = self.is_elliptical(contour)
         
-        return (ep and rnd)
+        return (sld)
+
+    def is_definitely_balloon(self, contour):
+    	""" Also filters out red objects"""
+        sld = self.is_solid(contour)
+        rnd = self.is_round(contour)
+        ep = self.is_elliptical(contour)  
+        return (ep and rnd and ep)
+
 
 
     def filter_and_mask(self, frame):
