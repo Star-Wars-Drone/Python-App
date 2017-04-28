@@ -481,15 +481,15 @@ class Drone:
                     true_balloon = bf.pick_best_balloon(balloon_list)
                     # find the vector to that balloon
                     tvec = bf.find_vector(true_balloon)
+                    x = tvec[2] * .0254
+                    y = tvec[0] * .0254
+                    z = tvec[1] * .0254
                     print "====Vector==================="
                     print tvec
                     print "============================="
                     self.vehicle.mode = VehicleMode("GUIDED")
                     time.sleep(2)
                     print "Flying to way point"
-                    x = tvec[2] * .0254
-                    y = tvec[0] * .0254
-                    z = tvec[1] * .0254
                     #self.goto_position_target_local_ned(x,y,z)
                     #time.sleep(10)
                     vec = [x,y,z]
@@ -571,9 +571,11 @@ class Drone:
             timeout = 0
             start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
             self.goto_position_target_local_ned(vec[0],vec[1],vec[2])
-            distance = math.sqrt((vec[0]) * (vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
+            distance = math.sqrt((vec[0] * vec[0]) + (vec[1] * vec[1]) + (vec[2] * vec[2]))
             distance_traveled = 0
-            while distance > distance_traveled or distance < 0.5:
+            while distance > distance_traveled:
+                if distance < 0.5:
+                    break
                 current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
                 distance_traveled = self.get_distance_metres(start_position,current_waypoint)
                 time.sleep(1)
