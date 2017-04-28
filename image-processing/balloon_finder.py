@@ -21,7 +21,7 @@ import math
 class BalloonFinder(object):
 
     def __init__(self):
-        self.cam = cv2.VideoCapture(0)
+        self.cam = cv2.VideoCapture(1)
         self.im_cnt =0;
         self.vid_cnt = 0;
         #self.low_red = np.array([0, 100, 100])
@@ -36,9 +36,11 @@ class BalloonFinder(object):
         #self.upper_red = np.array([193,255,255])
 
         # Best camera
-        self.low_red = np.array([146,47,228])
-        self.upper_red = np.array([194,255,255])
+        #self.low_red = np.array([146,47,228])
+        #self.upper_red = np.array([194,255,255])
 
+        self.low_red = np.array([140,208,33])
+        self.upper_red = np.array([197,255,255])
 
         #TODO(Ahmed): Replace with actual valuesi.
         self.balloon_mat = np.float32([[4,0,0],
