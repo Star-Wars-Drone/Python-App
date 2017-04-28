@@ -40,14 +40,19 @@ class BalloonFinder(object):
         #self.upper_red = np.array([194,255,255])
 
         # fish eye camera
-        self.low_red = np.array([124,84,95])
-        self.upper_red = np.array([212,255,255])
+        #self.low_red = np.array([124,84,95])
+        #self.upper_red = np.array([212,255,255])
 
+        #fish eye indoors
+        self.low_red = np.array([0,0,184])
+        self.upper_red = np.array([8,255,255])       
         #TODO(Ahmed): Replace with actual valuesi.
-        self.balloon_mat = np.float32([[4,0,0],
-                                       [-4,0,0],
-                                       [0,5,0],
-                                       [0,-5,0]])
+        w = 8
+        l = 10
+        self.balloon_mat = np.float32([[w/2,0,0],
+                                       [-w/2,0,0],
+                                       [0,l/2,0],
+                                       [0,-l/2,0]])
 
 
         self.cam_matrix = np.zeros((3,3), np.float32)
@@ -68,26 +73,6 @@ class BalloonFinder(object):
         self.distcoeffs[0,3] = 0.
         self.distcoeffs[0,4] = -5.1929690706114018e-01
 
-"""
-
-        self.cam_matrix = np.zeros((3,3), np.float32)
-        self.cam_matrix[0,0] = 7.6292554546337738e+02
-        self.cam_matrix[0,1] = 0.0
-        self.cam_matrix[0,2] = 3.1950000000000000e+02
-        self.cam_matrix[1,0] = 0. 
-        self.cam_matrix[1,1] = 7.6292554546337738e+02
-        self.cam_matrix[1,2] = 2.3950000000000000e+02
-        self.cam_matrix[2,0] = 0.
-        self.cam_matrix[2,1] = 0.
-        self.cam_matrix[2,2] = 1.
-
-        self.distcoeffs = np.zeros((1,5), np.float32)
-        self.distcoeffs[0,0] = -4.5614114539630291e-01
-        self.distcoeffs[0,1] = 8.8158732627801784e-01
-        self.distcoeffs[0,2] = 0.
-        self.distcoeffs[0,3] = 0.
-        self.distcoeffs[0,4] = -2.3488206318160914e+00
-        """
 
     def save_image(self):
         ret, im = self.cam.read()
@@ -339,6 +324,10 @@ def main():
         for b in balloon_list:
             # find the vector to that balloon
             tvec = bf.find_vector(b)
+            print "====Vector==================="
+            #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
+            print tvec
+            print "============================="
             #low_h = bf.get_lower_half(b)
             #cv2.drawContours(im, [low_h], -1, (0,0,255),8)
             # calculate waypoint to balloon
@@ -356,9 +345,7 @@ def main():
 	        rad = int(r)
 	        cv2.circle(im, center, rad,(0,0,255),8)
         cv2.imshow('ball', im)
-        #print "====Vector==================="
-        #print np.array([tvec[0]*2.54, tvec[1]*2.54, tvec[2]*2.54])
-        #print "============================="
+
         ###################################################
 
 
