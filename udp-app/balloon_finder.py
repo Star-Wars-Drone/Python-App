@@ -32,13 +32,16 @@ class BalloonFinder(object):
         #self.upper_red = np.array([255,255,255])
 
         # New camera
-        self.low_red = np.array([161,73,51])
-        self.upper_red = np.array([193,255,255])
+        #self.low_red = np.array([161,73,51])
+        #self.upper_red = np.array([193,255,255])
 
         # Best camera
         #self.low_red = np.array([146,47,228])
         #self.upper_red = np.array([194,255,255])
 
+        # fish eye camera
+        self.low_red = np.array([124,84,95])
+        self.upper_red = np.array([212,255,255])
 
         #TODO(Ahmed): Replace with actual valuesi.
         self.balloon_mat = np.float32([[4,0,0],
@@ -46,8 +49,28 @@ class BalloonFinder(object):
                                        [0,5,0],
                                        [0,-5,0]])
 
-        self.cam_matrix = np.zeros((3,3), np.float32)
 
+        self.cam_matrix = np.zeros((3,3), np.float32)
+        self.cam_matrix[0,0] = 4.2599387071839766e+02
+        self.cam_matrix[0,1] = 0.0
+        self.cam_matrix[0,2] = 3.1950000000000000e+02
+        self.cam_matrix[1,0] = 0. 
+        self.cam_matrix[1,1] = 4.2599387071839766e+02
+        self.cam_matrix[1,2] = 2.3950000000000000e+02
+        self.cam_matrix[2,0] = 0.
+        self.cam_matrix[2,1] = 0.
+        self.cam_matrix[2,2] = 1.
+
+        self.distcoeffs = np.zeros((1,5), np.float32)
+        self.distcoeffs[0,0] = -4.4586492498288877e-01
+        self.distcoeffs[0,1] = 4.0163244766332007e-01
+        self.distcoeffs[0,2] = 0.
+        self.distcoeffs[0,3] = 0.
+        self.distcoeffs[0,4] = -5.1929690706114018e-01
+
+"""
+
+        self.cam_matrix = np.zeros((3,3), np.float32)
         self.cam_matrix[0,0] = 7.6292554546337738e+02
         self.cam_matrix[0,1] = 0.0
         self.cam_matrix[0,2] = 3.1950000000000000e+02
@@ -64,6 +87,7 @@ class BalloonFinder(object):
         self.distcoeffs[0,2] = 0.
         self.distcoeffs[0,3] = 0.
         self.distcoeffs[0,4] = -2.3488206318160914e+00
+        """
 
     def save_image(self):
         ret, im = self.cam.read()
