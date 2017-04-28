@@ -18,6 +18,7 @@ import math
 #upper_red = np.array([360, 255, 255])
 
 
+
 class BalloonFinder(object):
 
     def __init__(self):
@@ -45,7 +46,10 @@ class BalloonFinder(object):
 
         #fish eye indoors
         self.low_red = np.array([0,0,184])
-        self.upper_red = np.array([8,255,255])       
+        self.upper_red = np.array([8,255,255])  
+
+        self.low_white = np.array([200,200,200]) 
+        self.up_white  = np.array([255,255,255])    
         #TODO(Ahmed): Replace with actual valuesi.
         w = 8
         l = 10
@@ -189,8 +193,19 @@ class BalloonFinder(object):
     def filter_and_mask(self, frame):
 
     	#bw = cv2.balanceWhite(frame, cv2.WHITE_BALANCE_SIMPLE)
-        blur = cv2.GaussianBlur(frame,(0,0),3)
-        hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
+    	# find all white pixels
+    	white = cv2.inRange(frame, self.low_white, self.up_white)
+    	# remove white pixels
+    	white_mask = cv2.bitwise_not(white)
+
+    	white_rem = cv2.bitwise_and(frame, frame,mask=white_mask)
+
+        #remove white
+        cv2.imshow('rem white', white_rem)
+
+        #blur = cv2.GaussianBlur(frame,(0,0),3)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
         mask = cv2.inRange(hsv, self.low_red, self.upper_red)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
