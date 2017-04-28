@@ -39,8 +39,9 @@ class BalloonFinder(object):
         #self.low_red = np.array([146,47,228])
         #self.upper_red = np.array([194,255,255])
 
-        self.low_red = np.array([140,208,33])
-        self.upper_red = np.array([197,255,255])
+        # fish eye camera
+        self.low_red = np.array([124,84,95])
+        self.upper_red = np.array([212,255,255])
 
         #TODO(Ahmed): Replace with actual valuesi.
         self.balloon_mat = np.float32([[4,0,0],
