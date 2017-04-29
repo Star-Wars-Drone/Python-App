@@ -44,34 +44,57 @@ class BalloonFinder(object):
         #self.upper_red = np.array([212,255,255])
 
         #fish eye indoors
-        self.low_red = np.array([0,0,184])
-        self.upper_red = np.array([8,255,255])       
+        #self.low_red = np.array([0,0,184])
+        #self.upper_red = np.array([8,255,255])       
+        
+        #demo day old camera again
+        self.low_red = np.array([126,38,238])
+        self.upper_red = np.array([255,255,255])       
+
         #TODO(Ahmed): Replace with actual valuesi.
-        w = 8
-        l = 10
+        w = 9.5
+        l = 12
         self.balloon_mat = np.float32([[w/2,0,0],
                                        [-w/2,0,0],
                                        [0,l/2,0],
                                        [0,-l/2,0]])
 
-
         self.cam_matrix = np.zeros((3,3), np.float32)
-        self.cam_matrix[0,0] = 4.2599387071839766e+02
+        self.cam_matrix[0,0] = 7.6292554546337738e+02
         self.cam_matrix[0,1] = 0.0
         self.cam_matrix[0,2] = 3.1950000000000000e+02
         self.cam_matrix[1,0] = 0. 
-        self.cam_matrix[1,1] = 4.2599387071839766e+02
+        self.cam_matrix[1,1] = 7.6292554546337738e+02
         self.cam_matrix[1,2] = 2.3950000000000000e+02
         self.cam_matrix[2,0] = 0.
         self.cam_matrix[2,1] = 0.
         self.cam_matrix[2,2] = 1.
-
+ 
         self.distcoeffs = np.zeros((1,5), np.float32)
-        self.distcoeffs[0,0] = -4.4586492498288877e-01
-        self.distcoeffs[0,1] = 4.0163244766332007e-01
+        self.distcoeffs[0,0] = -4.5614114539630291e-01
+        self.distcoeffs[0,1] = 8.8158732627801784e-01
         self.distcoeffs[0,2] = 0.
         self.distcoeffs[0,3] = 0.
-        self.distcoeffs[0,4] = -5.1929690706114018e-01
+        self.distcoeffs[0,4] = -2.3488206318160914e+00
+		
+		
+        #self.cam_matrix = np.zeros((3,3), np.float32)
+        #self.cam_matrix[0,0] = 4.2599387071839766e+02
+        #self.cam_matrix[0,1] = 0.0
+        #self.cam_matrix[0,2] = 3.1950000000000000e+02
+        #self.cam_matrix[1,0] = 0. 
+        #self.cam_matrix[1,1] = 4.2599387071839766e+02
+        #self.cam_matrix[1,2] = 2.3950000000000000e+02
+        #self.cam_matrix[2,0] = 0.
+        #self.cam_matrix[2,1] = 0.
+        #self.cam_matrix[2,2] = 1.
+        #
+        #self.distcoeffs = np.zeros((1,5), np.float32)
+        #self.distcoeffs[0,0] = -4.4586492498288877e-01
+        #self.distcoeffs[0,1] = 4.0163244766332007e-01
+        #self.distcoeffs[0,2] = 0.
+        #self.distcoeffs[0,3] = 0.
+        #self.distcoeffs[0,4] = -5.1929690706114018e-01
 
 
     def save_image(self):
@@ -189,8 +212,8 @@ class BalloonFinder(object):
     def filter_and_mask(self, frame):
 
     	#bw = cv2.balanceWhite(frame, cv2.WHITE_BALANCE_SIMPLE)
-        blur = cv2.GaussianBlur(frame,(0,0),3)
-        hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
+        #blur = cv2.GaussianBlur(frame,(0,0),3)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         mask = cv2.inRange(hsv, self.low_red, self.upper_red)
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
@@ -200,8 +223,8 @@ class BalloonFinder(object):
         """finds list of all balloon-like contours in image
             recommended to use an image that has masked out all non-red
         """
-
-        ret, im = self.cam.read()
+        for i in range(5):
+            ret, im = self.cam.read()
 
         mask = self.filter_and_mask(im)
         
