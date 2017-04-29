@@ -1,15 +1,17 @@
-from dronekit import connect, VehicleMode, LocationGlobal, LocationGlobalRelative
-from pymavlink import mavutil
-from LidarLiteV3 import LidarLiteV3
-from smbus import SMBus
 import time
 import math
 import sys
 import tty
 import termios
 import os
-from laserctl import Laser
+from dronekit import connect, VehicleMode, LocationGlobal, LocationGlobalRelative
+
+
 from balloon_finder import BalloonFinder
+from pymavlink import mavutil
+from LidarLiteV3 import LidarLiteV3
+from smbus import SMBus
+from laserctl import Laser
 
 class Drone:
     """ Drone Class"""
