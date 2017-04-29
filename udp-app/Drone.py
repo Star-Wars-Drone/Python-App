@@ -379,71 +379,34 @@ class Drone:
             print "Waiting for GPS...:", self.vehicle.gps_0.fix_type
             time.sleep(1)
 
-    def run99(self):
-        bf = BalloonFinder()
-        self.take_off(6)
-        time.sleep(8)
-        rotated_angle=0
-        detla_deg = 10
-        while rotated_angle<360:
-            im, balloon_list = bf.find_balloons()
-            if len(balloon_list)>0:
-                true_balloon = bf.pick_best_balloon(balloon_list)
-                # find the vector to that balloon
-                tvec = bf.find_vector(true_balloon)
-                self.goto_position_target_local_ned(tvec[2],-tvec[0],tvec[1])
-                time.sleep(10)
-                rotated_angle=0
-            else:
-                #rotate
-                pos=rotated_angle+delta
-                self.condition_yaw(pos,False)
-                time.sleep(5)
-                while True:
-                    angle = self.vehicle.attitude.yaw*57.2958
-                    if(angle < 0):
-                        angle = 360 + angle
-                    print "angle is: {}".format(angle)
-                    if pos + 1.5 > angle and pos -1.5 < angle:
-                        time.sleep(2)
-                        if pos + 1.5 > angle and pos -1.5 < angle:
-                            time.sleep(2)
-                            break
-                    time.sleep(.1)
-                time.sleep(.5)
-                print "Done with rotate"
-                time.sleep(1)
-                rotated_angle=rotated_angle+delta_angle
-        self.land()
 
     def update_vector(self,bf): 
-        for i in range(60):
+        for i in range(20):
+            print "looking for Balloon"
             im, balloon_list = bf.find_balloons()
-            if len(balloon_list)>0:
+            if len(balloon_list)>0 and balloon_list != None:
                 # if multiple, find one most likely to be true.
-                if len(balloon_list) == 1:
-                    true_balloon = balloon_list[0]
-                else:
-                    true_balloon = bf.pick_best_balloon(balloon_list)
+                true_balloon = bf.pick_best_balloon(balloon_list)
+                if true_balloon == None:
+                    continue
                 # find the vector to that balloon
                 tvec = bf.find_vector(true_balloon)
-                print "====Vector==================="
-                print tvec
-                print "============================="
-                #self.vehicle.mode = VehicleMode("GUIDED")
-                time.sleep(2)
-                print "Flying to way point"
                 x = tvec[2] * .0254
                 y = tvec[0] * .0254
                 z = tvec[1] * .0254
+                print "====Vector==================="
+                print tvec
+                print "============================="
+                self.vehicle.mode = VehicleMode("GUIDED")
+                time.sleep(2)
+                print "Flying to way point"
                 #self.goto_position_target_local_ned(x,y,z)
                 #time.sleep(10)
                 vec = [x,y,z]
                 rotated_angle=0
                 return vec
-            else:
-                return []
-            time.sleep(.033)
+            #time.sleep(.033)
+        return []
 
 
     def rotate_and_check_for_balloon(self,n,bf):
@@ -474,28 +437,33 @@ class Drone:
                 time.sleep(1)
             time.sleep(1)
             print "Checking for Balloon"
-            for i in range(60):
-                im, balloon_list = bf.find_balloons()
-                if len(balloon_list)>0:
-                    # if multiple, find one most likely to be true.
-                    true_balloon = bf.pick_best_balloon(balloon_list)
-                    # find the vector to that balloon
-                    tvec = bf.find_vector(true_balloon)
-                    print "====Vector==================="
-                    print tvec
-                    print "============================="
-                    self.vehicle.mode = VehicleMode("GUIDED")
-                    time.sleep(2)
-                    print "Flying to way point"
-                    x = tvec[2] * .0254
-                    y = tvec[0] * .0254
-                    z = tvec[1] * .0254
-                    #self.goto_position_target_local_ned(x,y,z)
-                    #time.sleep(10)
-                    vec = [x,y,z]
-                    rotated_angle=0
-                    return vec
-                time.sleep(.033)
+            vec = self.update_vector(bf)
+            if vec != []:
+                print "Found Balloon"
+                return vec
+            print "Didn't find Balloon"
+#            for i in range(60):
+#                im, balloon_list = bf.find_balloons()
+#                if len(balloon_list)>0:
+#                    # if multiple, find one most likely to be true.
+#                    true_balloon = bf.pick_best_balloon(balloon_list)
+#                    # find the vector to that balloon
+#                    tvec = bf.find_vector(true_balloon)
+#                    x = tvec[2] * .0254
+#                    y = tvec[0] * .0254
+#                    z = tvec[1] * .0254
+#                    print "====Vector==================="
+#                    print tvec
+#                    print "============================="
+#                    self.vehicle.mode = VehicleMode("GUIDED")
+#                    time.sleep(2)
+#                    print "Flying to way point"
+#                    #self.goto_position_target_local_ned(x,y,z)
+#                    #time.sleep(10)
+#                    vec = [x,y,z]
+#                    rotated_angle=0
+ #                   return vec
+ #               time.sleep(.033)
         print "Done with rotate"
         time.sleep(1)
         return []
@@ -571,12 +539,17 @@ class Drone:
             timeout = 0
             start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
             self.goto_position_target_local_ned(vec[0],vec[1],vec[2])
-            distance = math.sqrt((vec[0]) * (vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
+            distance = math.sqrt((vec[0] * vec[0]) + (vec[1] * vec[1]) + (vec[2] * vec[2]))
             distance_traveled = 0
-            while distance > distance_traveled or distance < 0.5:
+            while distance > distance_traveled:
+                if distance < 0.5:
+                    print "Too close to track by gps, flying blind"
+                    time.sleep(5)
+                    break
                 current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
                 distance_traveled = self.get_distance_metres(start_position,current_waypoint)
                 time.sleep(1)
+            print "At new position, Checking for Balloon"
             vec = self.update_vector(bf)
             while vec == []:
                 self.goto_position_target_local_ned(-1,0,0)
@@ -584,9 +557,9 @@ class Drone:
                 time.sleep(5)
                 vec = self.update_vector(bf)
                 timeout = timeout + 1
-                if timeout >= 10:
+                if timeout >= 5:
                     break
-            if timeout >= 10:
+            if timeout >= 5:
                 print "Can't find balloon. Flying home..."
                 break
         self.fly_to_waypoint(home_location)
@@ -594,196 +567,6 @@ class Drone:
         self.land()
 
 
-
-    def run15(self):             ### This is it ###
-        bf = BalloonFinder()
-        filename = "waypoints.txt"
-        num_waypoints = self.read_waypoints(filename)
-        current_waypoint = 0
-        self.take_off(6)
-        time.sleep(2)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,6)
-        print "Home set as: {}".format(home_location)
-        #time.sleep(3) 
-        self.fly_to_waypoint(self.waypoints[current_waypoint])
-        self.vehicle.mode = VehicleMode("AUTO")
-        time.sleep(4)
-        print "Rotating..."
-        vec = self.rotate_and_check_for_balloon(15,bf)
-        self.vehicle.mode = VehicleMode("GUIDED")
-        time.sleep(2)
-        if vec == []:
-            self.fly_to_waypoint(home_location)
-            print "############# Didn't find balloon!!! Flying Home. ###############"
-            time.sleep(2)
-            self.land()
-        killed = False
-        while not killed:
-            start_position =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-            self.goto_position_target_local_ned(0.85*vec[0],vec[1],vec[2])
-            distance = math.sqrt((0.85*vec[0]) * (0.85*vec[0]) + vec[1] * vec[1] + vec[2] * vec[2])
-            distance_traveled = 0
-            while distance > distance_traveled or distance < 0.5:
-                current_waypoint =  LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt)
-                distance_traveled = self.get_distance_metres(start_position,current_waypoint)
-                time.sleep(1)
-            centered = self.test_check_center(bf)
-            if centered == True:
-                killed = self.kill(bf)
-            if not killed:
-                vec = self.update_vector(bf)
-                if vec == []:
-                    self.goto_position_target_local_ned(-1,0,0)
-                    print "Can't see balloon. Backing up..."
-                    time.sleep(5)
-        self.fly_to_waypoint(home_location)
-        time.sleep(1)
-        self.land()
-                    
-
-
-
-    def run20(self):
-        bf = BalloonFinder()
-        self.take_off(6)
-        self.rotate_and_check_for_balloon(4,bf)
-        self.land()
-
-    def run12(self):
-        print "Testing Laser"
-        self.kill()
-        print "Done Test"
-    
-    def run11(self):
-        self.take_off(6)
-        self.goto_position_target_local_ned(100,0,0)
-        time.sleep(8)
-        self.land()
-    
-    def run10(self):
-        self.take_off(6)
-        time.sleep(2)
-        time.sleep(2)
-        self.vehicle.mode = VehicleMode("ALT_HOLD")
-        while True:
-            print self.vehicle.attitude.pitch
-            print self.vehicle.attitude.roll
-            print self.vehicle.attitude.yaw
-            self.vehicle.channels.overrides['3'] = 1500
-            self.vehicle.channels.overrides['2'] = 1550
-            time.sleep(.1)
-    
-    
-    def run9(self):                              ### Rotates on waypoints then flies home ###
-        filename = "waypoints.txt"
-        num_waypoints = self.read_waypoints(filename)
-        current_waypoint = 0
-        self.take_off(6)
-        time.sleep(2)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,6)
-        print "Home set as: {}".format(home_location)
-        time.sleep(3) 
-        while current_waypoint < num_waypoints:
-            self.fly_to_waypoint(self.waypoints[current_waypoint])
-            current_waypoint = current_waypoint + 1
-            self.vehicle.mode = VehicleMode("AUTO")
-            time.sleep(2)
-            self.rotate_and_check_360_div_by_n(20)
-            time.sleep(2)
-            self.vehicle.mode = VehicleMode("GUIDED")
-            time.sleep(2)
-        print "Flying to home location: {}".format(home_location)
-        self.fly_to_waypoint(home_location)
-        self.land()
-    
-    
-    
-    def run8(self):                             ### Flies to waypoints then files home ###
-        filename = "waypoints.txt"
-        num_waypoints = self.read_waypoints(filename)
-        current_waypoint = 0
-        self.take_off(6)
-        time.sleep(2)
-        home_location = LocationGlobalRelative(self.vehicle.location.global_frame.lat,self.vehicle.location.global_frame.lon,self.vehicle.location.global_frame.alt - 96)
-        print "Home set as: {}".format(home_location)
-        time.sleep(3) 
-        while current_waypoint < num_waypoints:
-            self.fly_to_waypoint(self.waypoints[current_waypoint])
-            current_waypoint = current_waypoint + 1
-            time.sleep(2)
-        print "Flying to home location: {}".format(home_location)
-        self.fly_to_waypoint(home_location)
-        self.land()
-    
-    
-    
-    
-    
-    
-    
-    def run7(self):                         ### Takes off and rotates then lands ###
-        self.take_off(6)
-        self.vehicle.mode = VehicleMode("AUTO")
-        time.sleep(3)
-        self.rotate_and_check_360_div_by_n(4)
-        self.land()
-
-
-
-
-    def run5(self):
-        print "Taking off"
-        self.take_off(7)
-        time.sleep(5)
-        print "Change to new alt"
-        self.goto_position_target_local_ned(50,50,-5)
-        time.sleep(120)
-        self.goto_position_target_local_ned(50,-50,-5)
-        time.sleep(120)
-        #self.move_to_altitude(7)
-        #self.send_ned_velocity(0,0,1,.1)
-        time.sleep(5)
-        self.roate_and_check_360_div_by_n(4)
-        self.clean_exit()            
-
-    def run1(self):
-        print "Taking off"
-        self.take_off(7)
-        time.sleep(1)
-        print "Change to new alt"
-        self.move_to_altitude(5)
-        time.sleep(1)
-        self.roate_360_div_by_n(4)
-        self.clean_exit()            
-        
-
-    def run2(self):
-        print "Taking off"
-        self.take_off(7)
-        time.sleep(1)
-        print "Change to new alt"
-        self.move_to_altitude(5)
-        time.sleep(1)
-        print "Moving to Norht"
-        self.condition_yaw(0,False)
-        time.sleep(5)
-        print "Moving to west"
-        self.condition_yaw(90,False)
-        time.sleep(5)
-        print "Moving to south"
-        self.condition_yaw(180,False)
-        time.sleep(5)
-        print "Moving to east"
-        self.condition_yaw(270,False)
-        time.sleep(5)
-        print "Moving to North"
-        self.condition_yaw(0,False)
-        time.sleep(5)
-        self.clean_exit()            
-        #self.rotate_on_pos()
-        #while True:
-            #print self.vehicle.location.global_relative_frame.alt
-            #time.sleep(.1)
 
     def take_off_init(self):
         """
@@ -810,31 +593,11 @@ class Drone:
         self.vehicle.simple_takeoff(altitude) # Take off to target altitude
 
 
-    def run_state(self):
-        state = "TAKEOFF"
-
-
-
     def take_off_run(self):
         print " Altitude: ", self.vehicle.location.global_relative_frame.alt
         #Break and return from function just below target altitude.
         if self.vehicle.location.global_relative_frame.alt>=altitude*0.95:
             print "Reached target altitude"
-
-
-    def run_init(self,state):
-        if(state == "TAKEOFF"):
-            self.take_off_init(6)
-
-
-
-
-    def run_loop(self,state):
-        if(state == "TAKEOFF"):
-            self.take_off_run()
-
-
-
 
     
 

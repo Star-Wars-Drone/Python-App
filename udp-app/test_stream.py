@@ -55,7 +55,7 @@ def gen():
         
        # cv2.imshow('canny', cann)
 
-        k = cv2.waitKey(5) & 0xFF
+        k = cv2.waitKey(1) & 0xFF
         if k ==27:
             break
         cv2.imwrite('t.jpg', im)
