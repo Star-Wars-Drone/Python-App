@@ -86,10 +86,6 @@ class Drone:
         print angle_count
         time.sleep(1)
         
-    def countDown(self):
-        for i in range(20):
-            print "Count Down: {}".format(20 - i)
-            time.sleep(1)
 
     def take_off(self, altitude):
         
@@ -136,6 +132,7 @@ class Drone:
                 #time.sleep(1)
 
     def land(self):
+        """ Switches the vehicle to LAND mode."""
         self.vehicle.mode = VehicleMode("LAND")
         while True:
             print "Waiting for program to end"
